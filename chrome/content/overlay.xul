@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://zeasr/skin/overlay.css" type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://zeasr/locale/zeasr.dtd">
+
+<overlay id="zeasr"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+    <stringbundleset id="stringbundleset">
+        <stringbundle id="zeasr-strings" src="chrome://zeasr/locale/zeasr.properties"/>
+    </stringbundleset>
+
+    <commandset id="mainCommandSet">
+        <command id="Tasks:RunAnalysisOnSelectedItems" oncommand="Zotero.SEASR.runAnalysis(ZoteroPane.getSelectedItems());"/>
+    </commandset>
+
+ <!--   <menupopup id="menu_ToolsPopup">
+        <menuitem id="menu_zeasr"
+                  label="SEASR"
+                  observes="Tasks:ShowItems"
+                  class="menuitem-iconic"
+                  image="chrome://zeasr/skin/seasr.png"/>
+    </menupopup>-->
+
+    <menupopup id="zotero-tb-actions-popup">
+        <menuseparator id="zotero-tb-actions-utilities-separator" hidden="false"/>
+        <menuitem insertbefore="zotero-tb-actions-separator"
+                  label="SEASR"
+                  observes="Tasks:RunAnalysisOnSelectedItems"
+                  class="menuitem-iconic"
+                  image="chrome://zeasr/skin/seasr.png"/>
+    </menupopup>
+
+    <popup id="zotero-collectionmenu">
+        <menuseparator/>
+        <menuitem id="seasr-collection-analyze"
+                  oncommand="Zotero.SEASR.analyzeCollection(ZoteroPane.getSelectedCollection(false));"/>
+    </popup>
+
+    <!-- Include the main extension logic -->
+    <script src="chrome://zotero/content/include.js"/>
+    <script src="chrome://zeasr/content/include.js"/>
+</overlay>
