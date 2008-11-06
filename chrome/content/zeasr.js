@@ -17,7 +17,7 @@ Zotero.SEASR = new function() {
         // create an RDF translator to be used for exporting the selected items
         translator = new Zotero.Translate("export");
         if (!translator.setTranslator("14763d24-8ba0-45df-8f52-b8d1108e7ac9")) {
-            LOG("Cannot create the Zotero RDF translator!");
+            LOG("Cannot instantiate the Zotero RDF translator!");
             return;
         }
         translator.setHandler("done", _exportDone);
@@ -33,27 +33,6 @@ Zotero.SEASR = new function() {
             return;
         }
 
-        var data = "";
-        var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"]
-                    .createInstance(Components.interfaces.nsIFileInputStream);
-        var sstream = Components.classes["@mozilla.org/scriptableinputstream;1"]
-                    .createInstance(Components.interfaces.nsIScriptableInputStream);
-        fstream.init(_tmpfile, -1, 0, 0);
-        sstream.init(fstream);
-
-        var str = sstream.read(4096);
-        while (str.length > 0) {
-          data += str;
-          str = sstream.read(4096);
-        }
-
-        sstream.close();
-        fstream.close();
-
-        try {
-            _tmpfile.remove(true);
-        } catch (ex) { LOG(ex); }
-
         // the IO service
         var ioService = Components.classes["@mozilla.org/network/io-service;1"]
                           .getService(Components.interfaces.nsIIOService);
@@ -64,10 +43,10 @@ Zotero.SEASR = new function() {
         // get a channel for that nsIURI
         var channel = ioService.newChannelFromURI(uri);
 
-        var inputStream = Components.classes["@mozilla.org/io/string-input-stream;1"]
-                  .createInstance(Components.interfaces.nsIStringInputStream);
-        var postData = data;
-        inputStream.setData(postData, postData.length);
+        var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+                .createInstance(Components.interfaces.nsIFileInputStream);
+        inputStream.init(_tmpfile, -1, -1, Components.interfaces.nsIFileInputStream.DELETE_ON_CLOSE |
+                         Components.interfaces.nsIFileInputStream.CLOSE_ON_EOF);
 
         var uploadChannel = channel.QueryInterface(Components.interfaces.nsIUploadChannel);
         uploadChannel.setUploadStream(inputStream, "application/x-www-form-urlencoded", -1);
@@ -84,6 +63,7 @@ Zotero.SEASR = new function() {
 
             onStopRequest: function(aRequest, aContext, aStatus) {
                 LOG("onStopRequest")
+                
                 if (Components.isSuccessCode(aStatus)) {
                     LOG("Request succeeded");
                 } else {
@@ -95,9 +75,6 @@ Zotero.SEASR = new function() {
                 LOG("onDataAvailable: srcOffset=" + aSourceOffset + " length=" + aLength);
             }
         };
-
-        // get an listener
-        //var listener = new StreamListener();
 
         httpChannel.asyncOpen(StreamListener, null);
     }
