@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://zeasr/skin/preferences.css" type="text/css"?>
+<!DOCTYPE overlay SYSTEM "chrome://zeasr/locale/preferences.dtd">
+
+<overlay id="zeasr-prefs"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+    <prefwindow id="zotero-prefs">
+        <prefpane id="zeasr-prefpane-settings"
+                  label="SEASR"
+                  image="chrome://zeasr/skin/seasr32.png">
+            <preferences>
+                <preference id="pref-flowURL" name="extensions.zeasr.flowURL" type="string"/>
+            </preferences>
+            
+            <groupbox>
+                <caption label="&zeasr.preferences.settings;"/>
+                
+                <hbox align="center">
+                    <label value="&zeasr.preferences.flowurl;"/>
+                    <textbox id="flowURL" flex="1" preference="pref-flowURL"/>
+                </hbox>
+                
+                <button id="btnRefreshFlows" label="&zeasr.preferences.refresh;"
+                        oncommand="Zotero.SEASR.refreshFlows();"/>
+            </groupbox>
+        </prefpane>
+    </prefwindow>
+</overlay>
