@@ -33,5 +33,7 @@
         <em:description>Bridge connecting the powerful SEASR Analytics engine and Zotero.</em:description>
         <em:creator>Boris Capitanu</em:creator>
         <em:homepageURL>http://www.seasr.org/zotero</em:homepageURL>
+        <em:iconURL>chrome://zeasr/skin/seasr32.png</em:iconURL>
+        <em:optionsURL>chrome://zotero/content/preferences/preferences.xul</em:optionsURL>
     </Description>
 </RDF>
