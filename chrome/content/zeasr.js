@@ -6,10 +6,10 @@ Zotero.SEASR = new function() {
 
     // localized strings
     var Strings;
-    
+
     function init() {
         Strings = document.getElementById('zeasr-strings');
-
+        
         // hook the "popupshowing" event for the item context menu
         document.getElementById('zotero-itemmenu')
                 .addEventListener('popupshowing',
@@ -63,14 +63,95 @@ Zotero.SEASR = new function() {
         translator.setHandler("done", _exportDone);
         if (!translator.setTranslator("14763d24-8ba0-45df-8f52-b8d1108e7ac9"))
             throw ("Cannot instantiate the Zotero RDF translator!");
-    }
-
-    function onItemAnalyticsContextMenuShowing() {
-        LOG("itemAnalyticsContextMenuShowing");
+        
+        // retrieve the list of available servers/flows from the config url
+        updateConfiguration(Zotero.SEASR.Prefs.get("configURL"));
     }
     
-    function onCollectionAnalyticsontextMenuShowing() {
-        LOG("collectionAnalyticsContextMenuShowing");
+    function updateConfiguration(configURL) {
+        LOG("Retrieving configuration data from " + configURL);
+        
+        var AJAX = new ajaxObject(configURL, function (response, status) {
+            if (status != 200) {
+                LOG("There was an error retrieving the configuration data!");
+                return;
+            }
+            
+            var configData = JSON.fromString(response);
+            
+            var servers = configData["meandre_servers"];
+            var flows = configData["seasr_flows"];
+    
+            var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
+            removeChildrenFromNode(itemAnalyticsDOM.firstChild);
+            
+            for each (var server in servers) {
+                server.id = server.host.toLowerCase() + ":" + server.port;
+                var serverDOM = document.getElementById(server.id);
+                if (!serverDOM) {
+                    serverDOM = document.createElement('menu');
+                    serverDOM.setAttribute('id', "item:" + server.id);
+                    serverDOM.setAttribute('label', server.name);
+                    serverDOM.appendChild(document.createElement('menupopup'));
+                    
+                    itemAnalyticsDOM.firstChild.appendChild(serverDOM);
+                } else {
+                    // clear all flows previously retrieved from this server
+                    removeChildrenFromNode(serverDOM.firstChild);
+                }
+                
+                retrieveFlowsFromServer(server, "zotero", function (server, response, status) {
+                    if (status != 200) {
+                        LOG("Error retrieving flows from " + server.host);
+                        return;
+                    }
+                    
+                    var serverDOM = document.getElementById("item:" + server.id);
+                    var flowData = JSON.fromString(response);
+                    for each (var flow in flowData) {
+                        var flowDOM = document.createElement('menuitem');
+                        flowDOM.setAttribute('label', flow.meandre_uri);
+                        flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
+                        serverDOM.firstChild.appendChild(flowDOM);
+                    }
+                });
+            }
+            
+            for each (var flow in flows) {
+                var flowDOM = document.createElement('menuitem');
+                flowDOM.setAttribute('label', flow.name);
+                flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
+                itemAnalyticsDOM.firstChild.appendChild(flowDOM);
+            }
+            
+            itemAnalyticsDOM.setAttribute("disabled", "false");
+        });
+        
+        AJAX.update("");
+    }
+    
+    function removeChildrenFromNode(node)
+    {
+        if (!node) return;
+
+        while (node.hasChildNodes())
+        {
+            node.removeChild(node.firstChild);
+        }
+    }
+    
+    function retrieveFlowsFromServer(server, tag, callback) {
+        var listFlowsUrl = "http://" + server.username + ":" + server.password + "@"
+           //+ server.host + ":" + server.port + "/services/repository/flows_by_tag.json";
+           + server.host + ":" + server.port + "/services/repository/list_flows.json";
+            
+        LOG("Querying service: " + listFlowsUrl);
+        
+        var AJAX = new ajaxObject(listFlowsUrl, function (response, status) {
+            callback(server, response, status);
+        });
+        //AJAX.update("q=" + tag);
+        AJAX.update("");
     }
 
     function _exportDone(obj, worked) {
@@ -143,7 +224,7 @@ Zotero.SEASR = new function() {
     }
     
     function refreshFlows() {
-        LOG("Refreshing flows from " + Zotero.SEASR.Prefs.get("flowURL"));
+        LOG("Refreshing flows from " + Zotero.SEASR.Prefs.get("configURL"));
     }
 };
 
@@ -258,4 +339,4 @@ Zotero.SEASR.Prefs = new function() {
     }
 }
 
-window.addEventListener('load', function(e) { Zotero.SEASR.init(); Zotero.SEASR.Prefs.init(); }, false);
+window.addEventListener('load', function(e) { Zotero.SEASR.Prefs.init(); Zotero.SEASR.init(); }, false);

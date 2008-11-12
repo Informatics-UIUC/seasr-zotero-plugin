@@ -25,14 +25,16 @@
 
     <popup id="zotero-itemmenu">
         <menuseparator/>
-        <menuitem id="seasr-item-analytics"
-                  onpopupshowing="Zotero.SEASR.onItemAnalyticsContextMenuShowing();"/>
+        <menu id="seasr-item-analytics" disabled="true">
+            <menupopup/>
+        </menu>
     </popup>
 
     <popup id="zotero-collectionmenu">
         <menuseparator/>
-        <menuitem id="seasr-collection-analytics"
-                  onpopupshowing="Zotero.SEASR.onCollectionAnalyticsContextMenuShowing();"/>
+        <menu id="seasr-collection-analytics" disabled="true">
+            <menupopup/>
+        </menu>
     </popup>
 
     <!-- Include the main extension logic -->

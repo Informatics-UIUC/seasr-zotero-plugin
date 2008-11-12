@@ -9,15 +9,15 @@
                   label="SEASR"
                   image="chrome://zeasr/skin/seasr32.png">
             <preferences>
-                <preference id="pref-flowURL" name="extensions.zeasr.flowURL" type="string"/>
+                <preference id="pref-configURL" name="extensions.zeasr.configURL" type="string"/>
             </preferences>
             
             <groupbox>
                 <caption label="&zeasr.preferences.settings;"/>
                 
                 <hbox align="center">
-                    <label value="&zeasr.preferences.flowurl;"/>
-                    <textbox id="flowURL" flex="1" preference="pref-flowURL"/>
+                    <label value="&zeasr.preferences.configurl;"/>
+                    <textbox id="configURL" flex="1" preference="pref-configURL"/>
                 </hbox>
                 
                 <button id="btnRefreshFlows" label="&zeasr.preferences.refresh;"
