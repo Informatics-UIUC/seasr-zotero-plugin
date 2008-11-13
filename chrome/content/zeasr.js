@@ -2,11 +2,16 @@ Zotero.SEASR = new function() {
     var _tmpfile, translator;
 
     this.init = init;
-    this.refreshFlows = refreshFlows;
+    this.updateConfiguration = updateConfiguration;
+    this.submitItems = submitItems;
+    this.submitCollection = submitCollection;
 
     // localized strings
     var Strings;
 
+    //////////////////
+    // Initialization
+    //////////////////
     function init() {
         Strings = document.getElementById('zeasr-strings');
         
@@ -68,6 +73,10 @@ Zotero.SEASR = new function() {
         updateConfiguration(Zotero.SEASR.Prefs.get("configURL"));
     }
     
+    //////////////////////////////////////////////////////////////////////////////////
+    // Load the configuration data (servers and flows) from the configuration URL
+    // and populate the item and collection context menu entries with the flows found
+    //////////////////////////////////////////////////////////////////////////////////
     function updateConfiguration(configURL) {
         LOG("Retrieving configuration data from " + configURL);
         
@@ -77,59 +86,118 @@ Zotero.SEASR = new function() {
                 return;
             }
             
+            // create a JS object from the received response string
             var configData = JSON.fromString(response);
             
             var servers = configData["meandre_servers"];
             var flows = configData["seasr_flows"];
     
+            // remove all entries in the seasr analytics item context menu
             var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
+            // TODO: need to remove event listeners from nodes to prevent memory leak
+            //for (var i in itemAnalyticsDOM.children)
             removeChildrenFromNode(itemAnalyticsDOM.firstChild);
             
-            for each (var server in servers) {
+            // remove all entries in the seasr analytics collection context menu
+            var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
+            removeChildrenFromNode(collectionAnalyticsDOM.firstChild);
+            
+            for each(var server in servers) {
+                // create an id used to index the DOM nodes associated with this server
                 server.id = server.host.toLowerCase() + ":" + server.port;
-                var serverDOM = document.getElementById(server.id);
-                if (!serverDOM) {
-                    serverDOM = document.createElement('menu');
-                    serverDOM.setAttribute('id', "item:" + server.id);
-                    serverDOM.setAttribute('label', server.name);
-                    serverDOM.appendChild(document.createElement('menupopup'));
-                    
-                    itemAnalyticsDOM.firstChild.appendChild(serverDOM);
-                } else {
-                    // clear all flows previously retrieved from this server
-                    removeChildrenFromNode(serverDOM.firstChild);
-                }
                 
+                // create a menu entry for this server, and set it disabled by default, pending
+                // the retrieval of the available flows from this server
+                serverDOM = createNode("menu", server.name);
+                serverDOM.setAttribute('id', 'item:' + server.id);
+                serverDOM.setAttribute('disabled', true);
+                serverDOM.appendChild(document.createElement('menupopup'));
+                
+                // add the menu to the item context menu
+                itemAnalyticsDOM.firstChild.appendChild(serverDOM);
+                
+                // clone the menu so we can add it to the collection context menu as well
+                var clone = serverDOM.cloneNode(true);
+                clone.setAttribute('id', 'collection:' + server.id);
+                collectionAnalyticsDOM.firstChild.appendChild(clone);
+                
+                // perform an asynchronous call to retrieve the list of flows
                 retrieveFlowsFromServer(server, "zotero", function (server, response, status) {
                     if (status != 200) {
                         LOG("Error retrieving flows from " + server.host);
                         return;
                     }
                     
-                    var serverDOM = document.getElementById("item:" + server.id);
+                    // obtain references to the item and collection context menu entries for this server
+                    var itemServerDOM = document.getElementById('item:' + server.id);
+                    var collectionServerDOM = document.getElementById('collection:' + server.id);
+                    
+                    // create a JS object from the received response string
                     var flowData = JSON.fromString(response);
-                    for each (var flow in flowData) {
-                        var flowDOM = document.createElement('menuitem');
-                        flowDOM.setAttribute('label', flow.meandre_uri);
-                        flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
-                        serverDOM.firstChild.appendChild(flowDOM);
+                    
+                    for each(var flow in flowData) {
+                        // create a menu item entry for the flow
+                        var flowDOM = createNode("menuitem", flow.meandre_uri);
+                        flowDOM.flowURL = flow.meandre_uri;
+                        flowDOM.addEventListener('click', itemFlowClicked, false);
+                        
+                        // ... and append it to the item server context menu
+                        itemServerDOM.firstChild.appendChild(flowDOM);
+                        
+                        // ... then clone it and append it to the collection server context menu
+                        var collectionFlowDOM = flowDOM.cloneNode(true);
+                        collectionFlowDOM.flowURL = flow.meandre_uri;
+                        collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
+                        collectionServerDOM.firstChild.appendChild(collectionFlowDOM);
                     }
+                    
+                    // we successfully received the data and can enable access to the server menus
+                    itemServerDOM.setAttribute('disabled', false);
+                    collectionServerDOM.setAttribute('disabled', false);
                 });
             }
             
+            // for each explicit flow defined in the configuration file
             for each (var flow in flows) {
-                var flowDOM = document.createElement('menuitem');
-                flowDOM.setAttribute('label', flow.name);
-                flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
+                // create a menuitem entry
+                var flowDOM = createNode("menuitem", flow.name);
+                flowDOM.flowURL = flow.url;
+                //flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
+                flowDOM.addEventListener('click', itemFlowClicked, false);
+                
+                // ... and add it to the item context menu
                 itemAnalyticsDOM.firstChild.appendChild(flowDOM);
+                
+                // ... then clone it and add it to the collection context menu as well
+                var collectionFlowDOM = flowDOM.cloneNode(true);
+                collectionFlowDOM.flowURL = flow.url;
+                collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
+                collectionAnalyticsDOM.firstChild.appendChild(collectionFlowDOM);
             }
             
-            itemAnalyticsDOM.setAttribute("disabled", "false");
+            // configuration received successfully -> enable access to the analytics menus
+            itemAnalyticsDOM.setAttribute('disabled', false);
+            collectionAnalyticsDOM.setAttribute('disabled', false);
         });
         
+        // perform the async http request
         AJAX.update("");
     }
     
+    function createNode(type, label) {
+        const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
+        
+        // create a new XUL menuitem
+        var item = document.createElementNS(XUL_NS, type);
+        item.setAttribute("label", label);
+        
+        return item;
+    
+    }
+
+    //////////////////////////////////////
+    // Removes all children of a DOM node
+    //////////////////////////////////////
     function removeChildrenFromNode(node)
     {
         if (!node) return;
@@ -140,6 +208,10 @@ Zotero.SEASR = new function() {
         }
     }
     
+    /////////////////////////////////////////////////////////////////////////
+    // Performs an asynchronous http request to retrieve all flows available
+    // on the specified server, matching a predefined tag
+    /////////////////////////////////////////////////////////////////////////
     function retrieveFlowsFromServer(server, tag, callback) {
         var listFlowsUrl = "http://" + server.username + ":" + server.password + "@"
            //+ server.host + ":" + server.port + "/services/repository/flows_by_tag.json";
@@ -154,18 +226,21 @@ Zotero.SEASR = new function() {
         AJAX.update("");
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    // Called when the translator has completed the export of the metadata to RDF
+    //////////////////////////////////////////////////////////////////////////////
     function _exportDone(obj, worked) {
         if (!worked) {
-            LOG("translate() did not work");
+            throw ("An error was encountered while retrieving the metadata from the translation service!");
             return;
         }
-
+        
         // the IO service
         var ioService = Components.classes["@mozilla.org/network/io-service;1"]
                           .getService(Components.interfaces.nsIIOService);
 
         // create an nsIURI
-        var uri = ioService.newURI("http://localhost:8081/test/hello", null, null);
+        var uri = ioService.newURI(obj.submitURL, null, null);
 
         // get a channel for that nsIURI
         var channel = ioService.newChannelFromURI(uri);
@@ -203,28 +278,34 @@ Zotero.SEASR = new function() {
             }
         };
 
+        // perform the asynchronous http post request
         httpChannel.asyncOpen(StreamListener, null);
     }
 
-    function runAnalysis(items) {
+    function itemFlowClicked() {
+        submitItems(ZoteroPane.getSelectedItems(), this.flowURL);
+    }
+    
+    function submitItems(items, url) {
         _tmpfile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
 
         translator.setLocation(_tmpfile);
         translator.setItems(items);
+        translator.submitURL = url;
         translator.translate();
     }
-
-    function analyzeCollection(collection) {
-        if (!collection || !collection.isCollection()) {
-            LOG("analyzeCollection: selection is not a collection - ignoring");
-            return;
-        } else {
-            LOG("analyzeCollection: Analyzing collection: " + collection.getName());
-        }
+    
+    function collectionFlowClicked() {
+        submitCollection(ZoteroPane.getSelectedCollection(false), this.flowURL);
     }
     
-    function refreshFlows() {
-        LOG("Refreshing flows from " + Zotero.SEASR.Prefs.get("configURL"));
+    function submitCollection(collection, url) {
+        _tmpfile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
+        
+        translator.setLocation(_tmpfile);
+        translator.setCollection(collection);
+        translator.submitURL = url;
+        translator.translate();
     }
 };
 

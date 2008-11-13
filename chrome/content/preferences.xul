@@ -20,9 +20,10 @@
                     <textbox id="configURL" flex="1" preference="pref-configURL"/>
                 </hbox>
                 
-                <button id="btnRefreshFlows" label="&zeasr.preferences.refresh;"
-                        oncommand="Zotero.SEASR.refreshFlows();"/>
+                <button id="btnRefresh" label="&zeasr.preferences.refresh;"
+                        oncommand="Zotero.SEASR.updateConfiguration(Zotero.SEASR.Prefs.get('configURL'));"/>
             </groupbox>
+            
         </prefpane>
     </prefwindow>
 </overlay>
