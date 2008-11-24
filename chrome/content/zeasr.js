@@ -106,21 +106,6 @@ Zotero.SEASR = new function() {
                 // create an id used to index the DOM nodes associated with this server
                 server.id = server.host.toLowerCase() + ":" + server.port;
                 
-                // create a menu entry for this server, and set it disabled by default, pending
-                // the retrieval of the available flows from this server
-                serverDOM = createNode("menu", server.name);
-                serverDOM.setAttribute('id', 'item:' + server.id);
-                serverDOM.setAttribute('disabled', true);
-                serverDOM.appendChild(document.createElement('menupopup'));
-                
-                // add the menu to the item context menu
-                itemAnalyticsDOM.firstChild.appendChild(serverDOM);
-                
-                // clone the menu so we can add it to the collection context menu as well
-                var clone = serverDOM.cloneNode(true);
-                clone.setAttribute('id', 'collection:' + server.id);
-                collectionAnalyticsDOM.firstChild.appendChild(clone);
-                
                 // perform an asynchronous call to retrieve the list of flows
                 retrieveFlowsFromServer(server, "zotero", function (server, response, status) {
                     if (status != 200) {
@@ -128,17 +113,36 @@ Zotero.SEASR = new function() {
                         return;
                     }
                     
-                    // obtain references to the item and collection context menu entries for this server
-                    var itemServerDOM = document.getElementById('item:' + server.id);
-                    var collectionServerDOM = document.getElementById('collection:' + server.id);
-                    
                     // create a JS object from the received response string
                     var flowData = JSON.fromString(response);
+                    // if there are no flows found matching the tag, then do not create a menu entry for this server
+                    if (flowData.size() == 0) return;
+                    
+                    // create a menu entry for this server, and set it disabled by default, pending
+                    // the retrieval of the available flows from this server
+                    serverDOM = createNode("menu", server.name);
+                    serverDOM.setAttribute('id', 'item:' + server.id);
+                    serverDOM.setAttribute('disabled', true);
+                    serverDOM.appendChild(document.createElement('menupopup'));
+                
+                    // add the menu to the item context menu
+                    itemAnalyticsDOM.firstChild.appendChild(serverDOM);
+                
+                    // clone the menu so we can add it to the collection context menu as well
+                    var clone = serverDOM.cloneNode(true);
+                    clone.setAttribute('id', 'collection:' + server.id);
+                    collectionAnalyticsDOM.firstChild.appendChild(clone);
+                
+                    // obtain references to the item and collection context menu entries for this server
+                    var itemServerDOM = serverDOM; //document.getElementById('item:' + server.id);
+                    var collectionServerDOM = clone; //document.getElementById('collection:' + server.id);
                     
                     for each(var flow in flowData) {
                         // create a menu item entry for the flow
-                        var flowDOM = createNode("menuitem", flow.meandre_uri);
+                        var flowDOM = createNode("menuitem", flow.meandre_uri_name);
                         flowDOM.flowURL = flow.meandre_uri;
+                        flowDOM.flowName = flow.meandre_uri_name;
+                        flowDOM.flowDescription = flow.description;
                         flowDOM.addEventListener('click', itemFlowClicked, false);
                         
                         // ... and append it to the item server context menu
@@ -147,6 +151,8 @@ Zotero.SEASR = new function() {
                         // ... then clone it and append it to the collection server context menu
                         var collectionFlowDOM = flowDOM.cloneNode(true);
                         collectionFlowDOM.flowURL = flow.meandre_uri;
+                        collectionFlowDOM.flowName = flow.meandre_uri_name;
+                        collectionFlowDOM.flowDescription = flow.description;
                         collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
                         collectionServerDOM.firstChild.appendChild(collectionFlowDOM);
                     }
@@ -214,16 +220,17 @@ Zotero.SEASR = new function() {
     /////////////////////////////////////////////////////////////////////////
     function retrieveFlowsFromServer(server, tag, callback) {
         var listFlowsUrl = "http://" + server.username + ":" + server.password + "@"
-           //+ server.host + ":" + server.port + "/services/repository/flows_by_tag.json";
-           + server.host + ":" + server.port + "/services/repository/list_flows.json";
+           + server.host + ":" + server.port + "/services/repository/flows_by_tag.json";
+           //+ server.host + ":" + server.port + "/services/repository/list_flows.json";
             
         LOG("Querying service: " + listFlowsUrl);
         
         var AJAX = new ajaxObject(listFlowsUrl, function (response, status) {
             callback(server, response, status);
         });
-        //AJAX.update("q=" + tag);
-        AJAX.update("");
+        
+        AJAX.update("tag=" + tag);
+        //AJAX.update("");
     }
 
     //////////////////////////////////////////////////////////////////////////////
