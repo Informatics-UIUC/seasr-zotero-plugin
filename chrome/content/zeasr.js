@@ -249,44 +249,84 @@ Zotero.SEASR = new function() {
         // create an nsIURI
         var uri = ioService.newURI(obj.submitURL, null, null);
 
+        var listener = new StreamListener(showExecutionResult);
+        
         // get a channel for that nsIURI
         var channel = ioService.newChannelFromURI(uri);
+        channel.notificationCallbacks = listener;
 
         var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
                 .createInstance(Components.interfaces.nsIFileInputStream);
         inputStream.init(_tmpfile, -1, -1, Components.interfaces.nsIFileInputStream.DELETE_ON_CLOSE |
                          Components.interfaces.nsIFileInputStream.CLOSE_ON_EOF);
+        
+        var scriptableInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
+                .createInstance(Components.interfaces.nsIScriptableInputStream);
+        scriptableInputStream.init(inputStream);
+        
+        var data = "";
 
+        var str = scriptableInputStream.read(4096);
+        while (str.length > 0) {
+          data += str;
+          str = scriptableInputStream.read(4096);
+        }
+        
+        data = "zoterordf=" + escape(data);
+
+        var stringInputStream = Components.classes["@mozilla.org/io/string-input-stream;1"]
+                .createInstance(Components.interfaces.nsIStringInputStream);
+        stringInputStream.setData(data, data.length);
+        
         var uploadChannel = channel.QueryInterface(Components.interfaces.nsIUploadChannel);
-        uploadChannel.setUploadStream(inputStream, "application/x-www-form-urlencoded", -1);
+        uploadChannel.setUploadStream(stringInputStream, "application/x-www-form-urlencoded", -1);
 
         var httpChannel = channel.QueryInterface(Components.interfaces.nsIHttpChannel);
         // order important - setUploadStream resets to PUT
         httpChannel.requestMethod = "POST";
 
-        var StreamListener = {
-            // nsIStreamListener
-            onStartRequest: function(aRequest, aContext) {
-                LOG("onStartRequest");
-            },
-
-            onStopRequest: function(aRequest, aContext, aStatus) {
-                LOG("onStopRequest")
-                
-                if (Components.isSuccessCode(aStatus)) {
-                    LOG("Request succeeded");
-                } else {
-                    LOG("Request failed");
-                }
-            },
-
-            onDataAvailable: function(aRequest, aContext, aStream, aSourceOffset, aLength) {
-                LOG("onDataAvailable: srcOffset=" + aSourceOffset + " length=" + aLength);
-            }
-        };
-
         // perform the asynchronous http post request
-        httpChannel.asyncOpen(StreamListener, null);
+        httpChannel.asyncOpen(listener, null);
+    }
+    
+    function StreamListener(callback) {
+        this.callback = callback;
+        this.onStartRequest = onStartRequest;
+        this.onStopRequest = onStopRequest;
+        this.onDataAvailable = onDataAvailable;
+        this.data = "";
+        
+        function onStartRequest(aRequest, aContext) {
+            LOG("onStartRequest");
+        }
+        
+        function onStopRequest(aRequest, aContext, aStatus) {
+            LOG("onStopRequest");
+            
+            if (Components.isSuccessCode(aStatus)) {
+                LOG("Request succeded");
+                
+                this.callback(this.data);
+            } else {
+                LOG("Request failed");
+                this.callback(null);
+            }
+        }
+        
+        function onDataAvailable(aRequest, aContext, aStream, aSourceOffset, aLength) {
+            LOG("onDataAvailable: srcOffset=" + aSourceOffset + " length=" + aLength);
+
+            var scriptableInputStream =
+                Components.classes["@mozilla.org/scriptableinputstream;1"]
+                .createInstance(Components.interfaces.nsIScriptableInputStream);
+                
+            scriptableInputStream.init(aStream);
+            this.data += scriptableInputStream.read(aLength); 
+        }
+    }
+    
+    function showExecutionResult(response) {
+        alert(response);
     }
 
     function itemFlowClicked() {
