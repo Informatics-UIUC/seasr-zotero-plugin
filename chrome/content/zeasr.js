@@ -326,7 +326,15 @@ Zotero.SEASR = new function() {
     }
     
     function showExecutionResult(response) {
-        alert(response);
+        var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
+                    .getService(Components.interfaces.nsIWindowWatcher);
+        var win = ww.openWindow(null, null, "Results",
+                                "width=800,height=600,status=no,toolbar=no,menubar=no,centerscreen", null);
+        win.document.open();
+        win.document.write("<html><head><title>Results</title></head><body>");
+        win.document.write(response);
+        win.document.write("</body></html>");
+        win.document.close();
     }
 
     function itemFlowClicked() {
