@@ -31,7 +31,7 @@
     </popup>
 
     <popup id="zotero-collectionmenu">
-        <menuseparator/>
+        <!-- TODO re-enable collection submittal <menuseparator/> -->
         <menu id="seasr-collection-analytics" disabled="true">
             <menupopup/>
         </menu>

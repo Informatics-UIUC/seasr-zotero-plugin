@@ -1,5 +1,5 @@
 Zotero.SEASR = new function() {
-    var _tmpfile, translator;
+    var _tmpfile, translator, flow;
 
     this.init = init;
     this.updateConfiguration = updateConfiguration;
@@ -53,7 +53,8 @@ Zotero.SEASR = new function() {
                             }
                         }
                         
-                        collectionAnalyticsDOM.setAttribute('hidden', false);
+                        //TODO change true to false to re-enable collection submittal
+                        collectionAnalyticsDOM.setAttribute('hidden', true);
                         collectionAnalyticsDOM.setAttribute('label', label);
                     }, false);
         
@@ -168,6 +169,7 @@ Zotero.SEASR = new function() {
                 // create a menuitem entry
                 var flowDOM = createNode("menuitem", flow.name);
                 flowDOM.flowURL = flow.url;
+                flowDOM.flowName = flow.name;
                 //flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
                 flowDOM.addEventListener('click', itemFlowClicked, false);
                 
@@ -177,6 +179,7 @@ Zotero.SEASR = new function() {
                 // ... then clone it and add it to the collection context menu as well
                 var collectionFlowDOM = flowDOM.cloneNode(true);
                 collectionFlowDOM.flowURL = flow.url;
+                collectionFlowDOM.flowName = flow.name;
                 collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
                 collectionAnalyticsDOM.firstChild.appendChild(collectionFlowDOM);
             }
@@ -249,7 +252,7 @@ Zotero.SEASR = new function() {
         // create an nsIURI
         var uri = ioService.newURI(obj.submitURL, null, null);
 
-        var listener = new StreamListener(showExecutionResult);
+        var listener = new StreamListener(processExecutionResult);
         
         // get a channel for that nsIURI
         var channel = ioService.newChannelFromURI(uri);
@@ -325,33 +328,99 @@ Zotero.SEASR = new function() {
         }
     }
     
-    function showExecutionResult(response) {
+    function processExecutionResult(response) {
+        if (response == null) {
+            alert("There was a problem retrieving the results from the server")
+            return;
+        }
+        
+        // Construct the result html
+        var htmlResult = "<html><head><title>" + flow.flowName + "</title></head><body>" + response + "</body></html>";
+ 
+        // Create a temporary file to store the result
+        var file = Components.classes["@mozilla.org/file/directory_service;1"]
+                    .getService(Components.interfaces.nsIProperties)
+                    .get("TmpD", Components.interfaces.nsIFile);
+        file.append(flow.flowName.replace(/\\|\/|:|\*|\?|"|<|>|\|/g, "_") + ".html");
+        file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
+
+        var stream = Components.classes["@mozilla.org/network/file-output-stream;1"]
+                .createInstance(Components.interfaces.nsIFileOutputStream);
+        stream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);  // write, create, truncate
+        
+        //TODO use this for writing the result as a non-intl string
+        stream.write(htmlResult, htmlResult.length);
+        stream.close();
+        
+        //TODO uncomment below to enable writing intl-aware output
+        /*// assume UTF-8 encoding for now
+        var charset = "UTF-8";
+        
+        // Write the result to the file
+        var os = Components.classes["@mozilla.org/intl/converter-output-stream;1"]
+                .createInstance(Components.interfaces.nsIConverterOutputStream);
+        os.init(stream, charset, 0, 0x0000);
+        os.writeString(htmlResult);
+        os.close();*/
+
+        // Create the result item
+        var data = {
+            title: flow.flowName,
+            creators: [
+                ['Meandre', 'SEASR Analytics', 'author']
+            ],
+            url: flow.flowURL
+        };
+        var resultItem = Zotero.Items.add('webpage', data);
+        
+        // Attached the saved results as snapshot to the item
+        var attachmentId = Zotero.Attachments.importSnapshotFromFile(
+                                file, flow.flowURL, flow.flowName,
+                                "text/html", "UTF-8", resultItem.id);
+        var attachmentItem = Zotero.Items.get(attachmentId);
+        attachmentItem.setField('accessDate', "CURRENT_TIMESTAMP");
+        attachmentItem.save();
+        
+        // Link the source items used in the analysis to the result item
+        for each (itemId in translator.itemIds)
+            resultItem.addSeeAlso(itemId);
+        
+        // Add the result item to the results collection
+        getCollectionResults().addItem(resultItem.id);
+        
+        // Display the result in a window
         var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
                     .getService(Components.interfaces.nsIWindowWatcher);
-        var win = ww.openWindow(null, null, "Results",
+        var win = ww.openWindow(null, null, flow.flowURL,
                                 "width=800,height=600,status=no,toolbar=no,menubar=no,centerscreen", null);
         win.document.open();
-        win.document.write("<html><head><title>Results</title></head><body>");
-        win.document.write(response);
-        win.document.write("</body></html>");
+        win.document.write(htmlResult);
         win.document.close();
     }
 
     function itemFlowClicked() {
-        submitItems(ZoteroPane.getSelectedItems(), this.flowURL);
+        flow = this;
+        submitItems(ZoteroPane.getSelectedItems(), flow.flowURL);
     }
     
     function submitItems(items, url) {
         _tmpfile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
+        
+        var itemIds = new Array(items.length);
+        for (var i = 0; i < items.length; i++)
+            itemIds[i] = items[i].id;
 
         translator.setLocation(_tmpfile);
         translator.setItems(items);
         translator.submitURL = url;
+        translator.itemIds = itemIds;
+        translator.collectionId = null;
         translator.translate();
     }
     
     function collectionFlowClicked() {
-        submitCollection(ZoteroPane.getSelectedCollection(false), this.flowURL);
+        flow = this;
+        submitCollection(ZoteroPane.getSelectedCollection(false), flow.flowURL);
     }
     
     function submitCollection(collection, url) {
@@ -360,7 +429,27 @@ Zotero.SEASR = new function() {
         translator.setLocation(_tmpfile);
         translator.setCollection(collection);
         translator.submitURL = url;
+        translator.collectionId = collection.id;
+        translator.itemIds = null;
         translator.translate();
+    }
+    
+    function getCollectionResults() {
+        var seasrAnalyticsResults = null;
+        var resultsCollectionName = Strings.getString("results.collection");
+        
+        var collections = Zotero.getCollections();
+        for each (var collection in collections) {
+            if (collection.getName() == resultsCollectionName) {
+                seasrAnalyticsResults = collection;
+                break;
+            }
+        }
+        
+        if (seasrAnalyticsResults == null)
+            seasrAnalyticsResults = Zotero.Collections.add(resultsCollectionName);
+            
+        return seasrAnalyticsResults;
     }
 };
 
