@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Zotero Plugin for SEASR" basedir="." default="dist">
+
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="dist.dir" value="${basedir}/dist"/>
+    <property name="plugin.file.name" value="ZEASR.xpi"/>
+
+    <target name="init">
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <target name="clean" description="-> removes auto-generated files/folders">
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="dist" depends="init" description="-> creates the distributable .xpi plugin file">
+        <zip destfile="${dist.dir}/${plugin.file.name}" basedir="${src.dir}"/>
+    </target>
+
+</project>
+
+<!-- DO NOT EDIT BELOW THIS LINE PLEASE -->
+<!-- vim:sw=4:softtabstop=4:expandtab
+-->
