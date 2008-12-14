@@ -381,6 +381,9 @@ Zotero.SEASR = new function() {
         attachmentItem.setField('accessDate', "CURRENT_TIMESTAMP");
         attachmentItem.save();
         
+        // Remove the temporary file (it was copied by Zotero in the previous step)
+        file.remove(false);
+        
         // Link the source items used in the analysis to the result item
         for each (itemId in translator.itemIds)
             resultItem.addSeeAlso(itemId);
