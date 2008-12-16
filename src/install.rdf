@@ -30,7 +30,7 @@
 
         <!-- Front End MetaData -->
         <em:name>SEASR Analytics for Zotero</em:name>
-        <em:description>Bridge connecting the powerful SEASR Analytics engine and Zotero.</em:description>
+        <em:description>Bridge connecting Zotero and the SEASR Analytics engine.</em:description>
         <em:creator>Boris Capitanu</em:creator>
         <em:homepageURL>http://www.seasr.org/zotero</em:homepageURL>
         <em:iconURL>chrome://zeasr/skin/seasr32.png</em:iconURL>
