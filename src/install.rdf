@@ -5,7 +5,7 @@
 
     <Description about="urn:mozilla:install-manifest">
         <em:id>zotero@seasr.org</em:id>
-        <em:version>0.3</em:version>
+        <em:version>0.3.1</em:version>
         <em:type>2</em:type>
 
         <!-- Target Application this extension can install into,
@@ -30,7 +30,7 @@
 
         <!-- Front End MetaData -->
         <em:name>SEASR Analytics for Zotero</em:name>
-        <em:description>Bridge connecting Zotero and the SEASR Analytics engine.</em:description>
+        <em:description>This extension to Zotero provides users with the ability to submit items / collections for analysis through the SEASR Analytics environment and retrieve, display, and store the results in Zotero itself.</em:description>
         <em:creator>Boris Capitanu</em:creator>
         <em:homepageURL>http://www.seasr.org/zotero</em:homepageURL>
         <em:iconURL>chrome://zeasr/skin/seasr32.png</em:iconURL>
