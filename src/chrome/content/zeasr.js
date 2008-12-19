@@ -300,12 +300,10 @@ Zotero.SEASR = new function() {
         this.data = "";
         
         function onStartRequest(aRequest, aContext) {
-            LOG("onStartRequest");
+            LOG("Sending request to server");
         }
         
         function onStopRequest(aRequest, aContext, aStatus) {
-            LOG("onStopRequest");
-            
             if (Components.isSuccessCode(aStatus)) {
                 LOG("Request succeded");
                 
@@ -317,7 +315,7 @@ Zotero.SEASR = new function() {
         }
         
         function onDataAvailable(aRequest, aContext, aStream, aSourceOffset, aLength) {
-            LOG("onDataAvailable: srcOffset=" + aSourceOffset + " length=" + aLength);
+            LOG("Data received: srcOffset=" + aSourceOffset + " length=" + aLength);
 
             var scriptableInputStream =
                 Components.classes["@mozilla.org/scriptableinputstream;1"]
@@ -337,12 +335,21 @@ Zotero.SEASR = new function() {
         // Construct the result html
         var htmlResult = "<html><head><title>" + flow.flowName + "</title></head><body>" + response + "</body></html>";
  
-        // Create a temporary file to store the result
-        var file = Components.classes["@mozilla.org/file/directory_service;1"]
+        // Create a temporary directory to store the result
+        var tmpDir = Components.classes["@mozilla.org/file/directory_service;1"]
                     .getService(Components.interfaces.nsIProperties)
                     .get("TmpD", Components.interfaces.nsIFile);
+        tmpDir.append("SEASR");
+        tmpDir.createUnique(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0777);
+        
+        // Create the results file
+        var file = Components.classes["@mozilla.org/file/local;1"]
+                    .createInstance(Components.interfaces.nsILocalFile);
+        file.initWithPath(tmpDir.path);
         file.append(flow.flowName.replace(/\\|\/|:|\*|\?|"|<|>|\|/g, "_") + ".html");
-        file.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
+        file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
+        
+        //LOG("Creating results temp file: " + file.path);
 
         var stream = Components.classes["@mozilla.org/network/file-output-stream;1"]
                 .createInstance(Components.interfaces.nsIFileOutputStream);
@@ -353,15 +360,15 @@ Zotero.SEASR = new function() {
         stream.close();
         
         //TODO uncomment below to enable writing intl-aware output
-        /*// assume UTF-8 encoding for now
-        var charset = "UTF-8";
-        
-        // Write the result to the file
-        var os = Components.classes["@mozilla.org/intl/converter-output-stream;1"]
-                .createInstance(Components.interfaces.nsIConverterOutputStream);
-        os.init(stream, charset, 0, 0x0000);
-        os.writeString(htmlResult);
-        os.close();*/
+        //// assume UTF-8 encoding for now
+        //var charset = "UTF-8";
+        //
+        //// Write the result to the file
+        //var os = Components.classes["@mozilla.org/intl/converter-output-stream;1"]
+        //        .createInstance(Components.interfaces.nsIConverterOutputStream);
+        //os.init(stream, charset, 0, 0x0000);
+        //os.writeString(htmlResult);
+        //os.close();
 
         // Create the result item
         var data = {
@@ -381,8 +388,8 @@ Zotero.SEASR = new function() {
         attachmentItem.setField('accessDate', "CURRENT_TIMESTAMP");
         attachmentItem.save();
         
-        // Remove the temporary file (it was copied by Zotero in the previous step)
-        file.remove(false);
+        // Remove the temporary directory (it was copied by Zotero in the previous step)
+        tmpDir.remove(true);
         
         // Link the source items used in the analysis to the result item
         for each (itemId in translator.itemIds)
@@ -391,14 +398,19 @@ Zotero.SEASR = new function() {
         // Add the result item to the results collection
         getCollectionResults().addItem(resultItem.id);
         
+        //,status=no,toolbar=no,location=no,menubar=no
+        
         // Display the result in a window
-        var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
-                    .getService(Components.interfaces.nsIWindowWatcher);
-        var win = ww.openWindow(null, null, flow.flowURL,
-                                "width=800,height=600,status=no,toolbar=no,menubar=no,centerscreen", null);
-        win.document.open();
-        win.document.write(htmlResult);
-        win.document.close();
+        window.open("zotero://attachment/" + attachmentId + "/", attachmentId,
+                    "width=800,height=600,resizable=yes,scrollbars=yes,centerscreen");
+        
+        //var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
+        //            .getService(Components.interfaces.nsIWindowWatcher);
+        //var win = ww.openWindow(null, null, flow.flowURL,
+        //                        "width=800,height=600,resizable=yes,scrollbars=yes", null);
+        //win.document.open();
+        //win.document.write(htmlResult);
+        //win.document.close();
     }
 
     function itemFlowClicked() {
