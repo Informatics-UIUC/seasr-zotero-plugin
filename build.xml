@@ -3,7 +3,7 @@
 
     <property name="src.dir" value="${basedir}/src"/>
     <property name="dist.dir" value="${basedir}/dist"/>
-    <property name="plugin.file.name" value="Zotero+SEASR.xpi"/>
+    <property name="plugin.file.name" value="seasr_analytics_for_zotero.xpi"/>
 
     <target name="init">
         <mkdir dir="${dist.dir}"/>
