@@ -5,8 +5,6 @@ if (!Zotero.SEASR) {
                                        .getService(Components.interfaces.nsIConsoleService);
         consoleService.logStringMessage(msg);
     };
-    
-    Components.utils.import("resource://gre/modules/JSON.jsm");
 
     const loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
                              .getService(Components.interfaces.mozIJSSubScriptLoader);

@@ -88,7 +88,7 @@ Zotero.SEASR = new function() {
             }
             
             // create a JS object from the received response string
-            var configData = JSON.fromString(response);
+            var configData = Zotero.JSON.unserialize(response);
             
             var servers = configData["meandre_servers"];
             var flows = configData["seasr_flows"];
@@ -115,7 +115,7 @@ Zotero.SEASR = new function() {
                     }
                     
                     // create a JS object from the received response string
-                    var flowData = JSON.fromString(response);
+                    var flowData = Zotero.JSON.unserialize(response);
                     // if there are no flows found matching the tag, then do not create a menu entry for this server
                     if (flowData.size() == 0) return;
                     
@@ -393,7 +393,10 @@ Zotero.SEASR = new function() {
         
         // Link the source items used in the analysis to the result item
         for each (itemId in translator.itemIds)
-            resultItem.addSeeAlso(itemId);
+            if ('addRelatedItem' in resultItem)
+                resultItem.addRelatedItem(itemId);
+            else
+                resultItem.addSeeAlso(itemId);  // for backward compatibility with Zotero 1.0.*
         
         // Add the result item to the results collection
         getCollectionResults().addItem(resultItem.id);
