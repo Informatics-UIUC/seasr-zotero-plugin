@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://zeasr/skin/preferences.css" type="text/css"?>
+<!DOCTYPE overlay SYSTEM "chrome://zeasr/locale/preferences.dtd">
+
+<overlay id="zeasr-prefs"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+    <prefwindow id="zotero-prefs">
+        <prefpane id="zeasr-prefpane-settings"
+                  label="SEASR"
+                  image="chrome://zeasr/skin/seasr32.png">
+            <preferences>
+                <preference id="pref-configProviders" name="extensions.zeasr.configProviders" type="string"/>
+                <preference id="pref-configURL" name="extensions.zeasr.configURL" type="string"/>
+            </preferences>
+            
+            <groupbox>
+                <caption label="&zeasr.preferences.settings;"/>
+                
+                <tree flex="1" id="configProviders" rows="6" selype="single" hidecolumnpicker="true" editable="true">
+                    <!--ondblclick="Zotero.SEASR.PrefPane.showProviderEditor(this.currentIndex)"-->
+                    <treecols>
+                        <treecol id="providerName" label="&zeasr.preferences.providername;" flex="1"/>
+                        <splitter class="tree-splitter"/>
+                        <treecol id="providerURL" label="&zeasr.preferences.providerurl;" flex="3"/>
+                        <splitter class="tree-splitter"/>
+                        <treecol id="providerEnabled" label="&zeasr.preferences.providerenabled;" type="checkbox" editable="true"/>
+                    </treecols>
+                    <treechildren id="configProviders-rows"/>
+                </tree>
+                
+                <separator class="thin"/>
+                
+                <hbox pack="end">
+                    <button label="&zeasr.preferences.provideradd;" onclick="Zotero.SEASR.PrefPane.showProviderEditor()"/>
+                    <button label="&zeasr.preferences.providerremove;" onclick="Zotero.SEASR.PrefPane.deleteSelectedProvider()"/>
+                </hbox>
+                        
+                <hbox align="center">
+                    <label value="&zeasr.preferences.configurl;"/>
+                    <textbox id="configURL" flex="1" preference="pref-configURL"/>
+                </hbox>
+                
+                <button id="btnRefresh" label="&zeasr.preferences.refresh;"
+                        oncommand="Zotero.SEASR.updateConfiguration(Zotero.SEASR.Prefs.get('configURL'));"/>
+            </groupbox>
+            
+        </prefpane>
+        
+        <script src="chrome://zeasr/content/include.js"/>
+        <script type="text/javascript"><![CDATA[
+            function init() {
+                 Zotero.SEASR.PrefPane.init(document);
+            }
+        //]]></script>
+    </prefwindow>
+</overlay>

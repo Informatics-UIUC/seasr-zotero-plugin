@@ -38,7 +38,6 @@
     </popup>
 
     <!-- Include the main extension logic -->
-    <script src="chrome://zotero/content/include.js"/>
     <script src="chrome://zeasr/content/include.js"/>
 
 </overlay>

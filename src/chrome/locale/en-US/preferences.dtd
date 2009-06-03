@@ -1,3 +1,9 @@
 <!ENTITY zeasr.preferences.settings             "Settings">
 <!ENTITY zeasr.preferences.refresh              "Refresh">
 <!ENTITY zeasr.preferences.configurl            "Configuration URL:">
+<!ENTITY zeasr.preferences.providername         "Provider">
+<!ENTITY zeasr.preferences.providerurl          "URL">
+<!ENTITY zeasr.preferences.providerenabled      "Enabled">
+<!ENTITY zeasr.preferences.provideradd          "Add">
+<!ENTITY zeasr.preferences.providerremove       "Remove">
+<!ENTITY zeasr.preferences.adddescription       "Add a new analytics provider">

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://zeasr/skin/preferences.css" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://zeasr/locale/preferences.dtd">
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        title="Add Provider"
+        buttons="accept,cancel"
+        buttonlabelaccept="&zeasr.preferences.provideradd;"
+        onload="doValidation()"
+        id="zeasr-providerEditor"
+        ondialogaccept="onAccept();">
+    
+    <vbox id="zeasr-prefs-providerEditor">
+        <label value="&zeasr.preferences.providername;" control="zeasr-providerEditor-name"/>
+        <textbox id="zeasr-providerEditor-name" oninput="doValidation()"/>
+        <separator class="thin"/>
+        <label value="&zeasr.preferences.providerurl;" control="zeasr-providerEditor-url"/>
+        <textbox id="zeasr-providerEditor-url" oninput="doValidation()"/>
+        <separator class="thin"/>
+        <checkbox id="zeasr-providerEditor-enabled" label="&zeasr.preferences.providerenabled;"/>
+    </vbox>
+    
+    <script src="chrome://zeasr/content/include.js"/>
+    <script type="text/javascript"><![CDATA[
+        var param = window.arguments[0];
+        document.getElementById('zeasr-providerEditor-name').value = param.name;
+        document.getElementById('zeasr-providerEditor-url').value = param.url;
+        document.getElementById('zeasr-providerEditor-enabled').checked = param.enabled;
+        
+        function onAccept() {
+            var name = document.getElementById('zeasr-providerEditor-name').value;
+            var url = document.getElementById('zeasr-providerEditor-url').value;
+            var enabled = document.getElementById('zeasr-providerEditor-enabled').checked;
+            
+            Zotero.SEASR.Preferences.addProvider(name, url, enabled);
+        }
+        
+        function doValidation() {
+            var name = document.getElementById('zeasr-providerEditor-name').value;
+            var url = document.getElementById('zeasr-providerEditor-url').value;
+            document.documentElement.getButton("accept").disabled = (name.length == 0 || url.length == 0);
+        }
+    //]]></script>
+</dialog>

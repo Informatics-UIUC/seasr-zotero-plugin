@@ -71,7 +71,7 @@ Zotero.SEASR = new function() {
             throw ("Cannot instantiate the Zotero RDF translator!");
         
         // retrieve the list of available servers/flows from the config url
-        updateConfiguration(Zotero.SEASR.Prefs.get("configURL"));
+        updateConfiguration(Zotero.SEASR.PrefManager.get("configURL"));
     }
     
     //////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ Zotero.SEASR = new function() {
             }
             
             // create a JS object from the received response string
-            var configData = Zotero.JSON.unserialize(response);
+            var configData = JSON.unserialize(response);
             
             var servers = configData["meandre_servers"];
             var flows = configData["seasr_flows"];
@@ -115,7 +115,7 @@ Zotero.SEASR = new function() {
                     }
                     
                     // create a JS object from the received response string
-                    var flowData = Zotero.JSON.unserialize(response);
+                    var flowData = JSON.unserialize(response);
                     // if there are no flows found matching the tag, then do not create a menu entry for this server
                     if (flowData.size() == 0) return;
                     
@@ -471,115 +471,4 @@ Zotero.SEASR = new function() {
     }
 };
 
-
-Zotero.SEASR.Prefs = new function() {
-    this.init = init;
-    this.get = get;
-    this.set = set;
-    
-    this.register = register;
-    this.unregister = unregister;
-    this.observe = observe;
-    
-    this.prefBranch;
-    
-    ///////////////////////////////////////
-    // Initializes the preference observer
-    ///////////////////////////////////////
-    function init() {
-        var prefs = Components.classes["@mozilla.org/preferences-service;1"]
-                              .getService(Components.interfaces.nsIPrefService);
-        this.prefBranch = prefs.getBranch("extensions.zeasr.");
-        
-        // Observe preference changes
-        this.register();
-    }
-    
-    /////////////////////////
-    // Retrieve a preference
-    /////////////////////////
-    function get(pref, global) {
-        try {
-            if (global) {
-                var service = Components.classes["@mozilla.org/preferences-service;1"]
-                                        .getService(Components.interfaces.nsIPrefService);
-            }
-            else {
-                var service = this.prefBranch;
-            }
-            
-            switch (this.prefBranch.getPrefType(pref)){
-                case this.prefBranch.PREF_BOOL:
-                    return this.prefBranch.getBoolPref(pref);
-                case this.prefBranch.PREF_STRING:
-                    return this.prefBranch.getCharPref(pref);
-                case this.prefBranch.PREF_INT:
-                    return this.prefBranch.getIntPref(pref);
-                default:
-                    throw ("Unsupported preference type '" +
-                           this.prefBranch.getPrefType(pref) + "'");
-            }
-        }
-        catch(e) {
-            throw ("Invalid preference '" + pref + "'");
-        }
-    }
-    
-    ////////////////////
-    // Set a preference
-    ////////////////////
-    function set(pref, value){
-        try {
-            switch (this.prefBranch.getPrefType(pref)){
-                case this.prefBranch.PREF_BOOL:
-                    return this.prefBranch.setBoolPref(pref, value);
-                case this.prefBranch.PREF_STRING:
-                    return this.prefBranch.setCharPref(pref, value);
-                case this.prefBranch.PREF_INT:
-                    return this.prefBranch.setIntPref(pref, value);
-                default:
-                    throw ("Unsupported preference type '" +
-                           this.prefBranch.getPrefType(pref) + "'");
-            }
-        }
-        catch(e) {
-            throw ("Invalid preference '" + pref + "'");
-        }
-    }
-    
-    ///////////////////////////////////////////////
-    // Registers a preference change event observer
-    ///////////////////////////////////////////////
-    function register() {
-        this.prefBranch.QueryInterface(Components.interfaces.nsIPrefBranch2);
-        this.prefBranch.addObserver("", this, false);
-    }
-    
-    ///////////////////////////////////////
-    // Unregisters the preference observer
-    ///////////////////////////////////////
-    function unregister() {
-        if (!this.prefBranch) return;
-        
-        this.prefBranch.removeObserver("", this);
-    }
-    
-    //////////////////////////////
-    // Handles preference changes
-    //////////////////////////////
-    function observe(subject, topic, data) {
-        if (topic != "nsPref:changed") return;
-        
-        // subject is the nsIPrefBranch we're observing (after appropriate QI)
-        // data is the name of the pref that's been changed (relative to subject)
-        switch(data) {
-            /*
-            case "flowURL":
-                LOG("flowURL preferenced has been changed");
-                break;
-            */
-        }
-    }
-}
-
-window.addEventListener('load', function(e) { Zotero.SEASR.Prefs.init(); Zotero.SEASR.init(); }, false);
+window.addEventListener('load', function(e) { Zotero.SEASR.init(); }, false);
