@@ -10,7 +10,6 @@
                   image="chrome://zeasr/skin/seasr32.png">
             <preferences>
                 <preference id="pref-configProviders" name="extensions.zeasr.configProviders" type="string"/>
-                <preference id="pref-configURL" name="extensions.zeasr.configURL" type="string"/>
             </preferences>
             
             <groupbox>
@@ -35,14 +34,6 @@
                     <button label="&zeasr.preferences.provideradd;" oncommand="Zotero.SEASR.PrefPane.showProviderEditor()"/>
                     <button id="providerremove" label="&zeasr.preferences.providerremove;" oncommand="Zotero.SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
                 </hbox>
-                        
-                <hbox align="center">
-                    <label value="&zeasr.preferences.configurl;"/>
-                    <textbox id="configURL" flex="1" preference="pref-configURL"/>
-                </hbox>
-                
-                <button id="btnRefresh" label="&zeasr.preferences.refresh;"
-                        oncommand="Zotero.SEASR.updateConfiguration(Zotero.SEASR.Prefs.get('configURL'));"/>
             </groupbox>
             
         </prefpane>

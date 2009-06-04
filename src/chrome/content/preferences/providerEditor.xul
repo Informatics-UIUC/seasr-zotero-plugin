@@ -21,11 +21,12 @@
     </vbox>
     
     <script src="chrome://zeasr/content/include.js"/>
+    <script src="chrome://zeasr/content/utils.js"/>
     <script type="text/javascript"><![CDATA[
         var param = window.arguments[0];
         document.getElementById('zeasr-providerEditor-name').value = param.provider.name;
         document.getElementById('zeasr-providerEditor-url').value = param.provider.url;
-        document.getElementById('zeasr-providerEditor-enabled').checked = param.provider.enabled;
+        document.getElementById('zeasr-providerEditor-enabled').checked = param.provider.enabled.toBoolean();
         
         function onAccept() {
             var name = document.getElementById('zeasr-providerEditor-name').value;

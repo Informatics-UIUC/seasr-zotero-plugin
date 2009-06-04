@@ -100,8 +100,9 @@ Zotero.SEASR.PrefManager = new function() {
         // data is the name of the pref that's been changed (relative to subject)
         switch(data) {
             case "configProviders":
-                LOG("The config providers preference has changed");
+                LOG("The SEASR providers preference has changed");
                 Zotero.SEASR.PrefPane.updateProviderList();
+                Zotero.SEASR.retrieveConfiguration(Zotero.SEASR.Preferences.getProviders());
                 break;
         }
     }
@@ -116,53 +117,76 @@ Zotero.SEASR.Preferences = new function() {
     
     
     function getProviders() {
-        return getProvidersFromPref("configProviders");
+        return _JSON.unserialize(Zotero.SEASR.PrefManager.get("configProviders"));
     }
     
     function setProviders(providers) {
-        setProvidersPref("configProviders", providers);
-    }
-    
-    function getProvidersFromPref(pref)
-    {
-        return JSON.unserialize(Zotero.SEASR.PrefManager.get(pref));
-    }
-    
-    function setProvidersPref(pref, providers)
-    {
-        Zotero.SEASR.PrefManager.set(pref, JSON.serialize(providers));
+        Zotero.SEASR.PrefManager.set("configProviders", _JSON.serialize(providers));
     }
     
     function addProvider(provider) {
         var configProviders = getProviders();
-        configProviders.push({ name: provider.name, url: provider.url, enabled: provider.enabled });
+        
+        // trim out spaces
+        provider.name = provider.name.trim();
+        provider.url = provider.url.trim();
+        
+        // check for duplicate
+        for each(item in configProviders) {
+            if (item.name.trim().toLowerCase() == provider.name.toLowerCase() &&
+                item.url.trim() == provider.url)
+                    throw new Error("Duplicate provider");
+        }
+
+        configProviders.push(provider);
+            
         setProviders(configProviders);
     }
     
-    function deleteProvider(providerURL)
+    function deleteProvider(index) {
+        var configProviders = getProviders();
+        configProviders.splice(index, 1);
+        setProviders(configProviders);
+    }
+    
+    /*function deleteProvider(providerName, providerURL)
     {
         var configProviders = getProviders();
+        var n = configProviders.length;
         
         for (var i = 0; i < configProviders.length; i++) {
-            if (configProviders[i].url == providerURL) {
+            if (configProviders[i].name.trim().toLowerCase() == providerName.trim().toLowerCase() &&
+                configProviders[i].url.trim() == providerURL.trim()) {
                 configProviders.splice(i, 1);
                 break;
             }
         }
         
+        if (configProviders.length == n)
+            // nothing was removed
+            return;
+        
         setProviders(configProviders);
-    }
+    }*/
     
-    function changeProvider(url, newProvider) {
+    function changeProvider(index, newProvider) {
         var configProviders = getProviders();
         
-        for (var i = 0; i < configProviders.length; i++) {
-            if (configProviders[i].url == url) {
-                configProviders[i] = newProvider;
-                break;
-            }
+        // trim out spaces
+        newProvider.name = newProvider.name.trim();
+        newProvider.url = newProvider.url.trim();
+                
+        configProviders.splice(index, 1);
+        
+        // check for duplicate
+        for each(item in configProviders) {
+            if (item.name.trim().toLowerCase() == newProvider.name.toLowerCase() &&
+                item.url.trim() == newProvider.url)
+                    throw new Error("Duplicate provider");
         }
         
+        configProviders.splice(index, 0, newProvider);
+                
         setProviders(configProviders);
     }
 }
@@ -220,10 +244,11 @@ Zotero.SEASR.PrefPane = new function() {
         var tree = prefpane.getElementById('configProviders');
         if (tree.currentIndex < 0) return;
     
-        var treeitem = tree.lastChild.childNodes[tree.currentIndex];
-        var providerURL = treeitem.firstChild.childNodes[1].getAttribute('label');
+        //var treeitem = tree.lastChild.childNodes[tree.currentIndex];
+        //var providerName = treeitem.firstChild.childNodes[0].getAttribute('label');
+        //var providerURL = treeitem.firstChild.childNodes[1].getAttribute('label');
  
-        Zotero.SEASR.Preferences.deleteProvider(providerURL);
+        Zotero.SEASR.Preferences.deleteProvider(tree.currentIndex);
     }
     
     function showProviderEditor(idx)
@@ -251,8 +276,18 @@ Zotero.SEASR.PrefPane = new function() {
         }
         
         if (typeof(idx) == "undefined")
-            Zotero.SEASR.Preferences.addProvider(param.provider);
-        else
-            Zotero.SEASR.Preferences.changeProvider(providerURL, param.provider);   
+            try {
+                Zotero.SEASR.Preferences.addProvider(param.provider);
+            } catch(e) {
+                alert("Could not add the specified provider. Reason: " + e.message);
+            }
+        else {
+            if (providerName != param.provider.name || providerURL != param.provider.url || providerEnabled != param.provider.enabled)
+                try {
+                    Zotero.SEASR.Preferences.changeProvider(idx, param.provider);
+                } catch(e) {
+                    alert("Could not change the specified provider. Reason: " + e.message);
+                }
+        }
     }
 }

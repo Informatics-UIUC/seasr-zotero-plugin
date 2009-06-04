@@ -2,7 +2,7 @@ Zotero.SEASR = new function() {
     var _tmpfile, translator, flow;
 
     this.init = init;
-    this.updateConfiguration = updateConfiguration;
+    this.retrieveConfiguration = retrieveConfiguration;
     this.submitItems = submitItems;
     this.submitCollection = submitCollection;
 
@@ -26,11 +26,8 @@ Zotero.SEASR = new function() {
                             return;
                         }
                             
-                        var multiple = itemSelectionCount > 1 ? ".multiple" : "";
-                        var label = Strings.getString("item.analytics.submit" + multiple);
-                        
                         itemAnalyticsDOM.setAttribute('hidden', false);
-                        itemAnalyticsDOM.setAttribute('label', label);
+                        itemAnalyticsDOM.setAttribute('label', Strings.getString("seasr.analytics"));
                     }, false);
         
         // hook the "popupshowing" event for the collection context menu
@@ -42,19 +39,15 @@ Zotero.SEASR = new function() {
                         var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
                         var selectedCollection = ZoteroPane.getSelectedCollection(false);
 
-                        if (!selectedCollection)
-                            label = Strings.getString("collection.analytics.submit.all");
+                        if (!selectedCollection || selectedCollection.isCollection())
+                            label = Strings.getString("seasr.analytics");
                         else {
-                            if (selectedCollection.isCollection())
-                                label = Strings.getFormattedString("collection.analytics.submit", [selectedCollection.getName()]);
-                            else {
                                 collectionAnalyticsDOM.setAttribute('hidden', true);
                                 return;
-                            }
                         }
                         
                         //TODO change true to false to re-enable collection submittal
-                        collectionAnalyticsDOM.setAttribute('hidden', true);
+                        collectionAnalyticsDOM.setAttribute('hidden', false);
                         collectionAnalyticsDOM.setAttribute('label', label);
                     }, false);
         
@@ -70,129 +63,127 @@ Zotero.SEASR = new function() {
         if (!translator.setTranslator("14763d24-8ba0-45df-8f52-b8d1108e7ac9"))
             throw ("Cannot instantiate the Zotero RDF translator!");
         
-        // retrieve the list of available servers/flows from the config url
-        updateConfiguration(Zotero.SEASR.PrefManager.get("configURL"));
+        // update the UI with data extracted from the provider configuration
+        retrieveConfiguration(Zotero.SEASR.Preferences.getProviders());
     }
     
     //////////////////////////////////////////////////////////////////////////////////
-    // Load the configuration data (servers and flows) from the configuration URL
+    // Load the configuration data from the configured providers
     // and populate the item and collection context menu entries with the flows found
     //////////////////////////////////////////////////////////////////////////////////
-    function updateConfiguration(configURL) {
-        LOG("Retrieving configuration data from " + configURL);
-        
-        var AJAX = new ajaxObject(configURL, function (response, status) {
-            if (status != 200) {
-                LOG("There was an error retrieving the configuration data!");
-                return;
-            }
-            
-            // create a JS object from the received response string
-            var configData = JSON.unserialize(response);
-            
-            var servers = configData["meandre_servers"];
-            var flows = configData["seasr_flows"];
+    function retrieveConfiguration(providers) {
+        if (!providers) throw new Error("updateConfiguration: Need to specify the providers to use");
     
-            // remove all entries in the seasr analytics item context menu
-            var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
-            // TODO: need to remove event listeners from nodes to prevent memory leak
-            //for (var i in itemAnalyticsDOM.children)
-            removeChildrenFromNode(itemAnalyticsDOM.firstChild);
-            
-            // remove all entries in the seasr analytics collection context menu
-            var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
-            removeChildrenFromNode(collectionAnalyticsDOM.firstChild);
-            
-            for each(var server in servers) {
-                // create an id used to index the DOM nodes associated with this server
-                server.id = server.host.toLowerCase() + ":" + server.port;
-                
-                // perform an asynchronous call to retrieve the list of flows
-                retrieveFlowsFromServer(server, "zotero", function (server, response, status) {
-                    if (status != 200) {
-                        LOG("Error retrieving flows from " + server.host);
-                        return;
-                    }
-                    
-                    // create a JS object from the received response string
-                    var flowData = JSON.unserialize(response);
-                    // if there are no flows found matching the tag, then do not create a menu entry for this server
-                    if (flowData.size() == 0) return;
-                    
-                    // create a menu entry for this server, and set it disabled by default, pending
-                    // the retrieval of the available flows from this server
-                    serverDOM = createNode("menu", server.name);
-                    serverDOM.setAttribute('id', 'item:' + server.id);
-                    serverDOM.setAttribute('disabled', true);
-                    serverDOM.appendChild(document.createElement('menupopup'));
-                
-                    // add the menu to the item context menu
-                    itemAnalyticsDOM.firstChild.appendChild(serverDOM);
-                
-                    // clone the menu so we can add it to the collection context menu as well
-                    var clone = serverDOM.cloneNode(true);
-                    clone.setAttribute('id', 'collection:' + server.id);
-                    collectionAnalyticsDOM.firstChild.appendChild(clone);
-                
-                    // obtain references to the item and collection context menu entries for this server
-                    var itemServerDOM = serverDOM; //document.getElementById('item:' + server.id);
-                    var collectionServerDOM = clone; //document.getElementById('collection:' + server.id);
-                    
-                    for each(var flow in flowData) {
-                        // create a menu item entry for the flow
-                        var flowDOM = createNode("menuitem", flow.meandre_uri_name);
-                        flowDOM.flowURL = flow.meandre_uri;
-                        flowDOM.flowName = flow.meandre_uri_name;
-                        flowDOM.flowDescription = flow.description;
-                        flowDOM.addEventListener('click', itemFlowClicked, false);
-                        
-                        // ... and append it to the item server context menu
-                        itemServerDOM.firstChild.appendChild(flowDOM);
-                        
-                        // ... then clone it and append it to the collection server context menu
-                        var collectionFlowDOM = flowDOM.cloneNode(true);
-                        collectionFlowDOM.flowURL = flow.meandre_uri;
-                        collectionFlowDOM.flowName = flow.meandre_uri_name;
-                        collectionFlowDOM.flowDescription = flow.description;
-                        collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
-                        collectionServerDOM.firstChild.appendChild(collectionFlowDOM);
-                    }
-                    
-                    // we successfully received the data and can enable access to the server menus
-                    itemServerDOM.setAttribute('disabled', false);
-                    collectionServerDOM.setAttribute('disabled', false);
-                });
-            }
-            
-            // for each explicit flow defined in the configuration file
-            for each (var flow in flows) {
-                // create a menuitem entry
-                var flowDOM = createNode("menuitem", flow.name);
-                flowDOM.flowURL = flow.url;
-                flowDOM.flowName = flow.name;
-                //flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
-                flowDOM.addEventListener('click', itemFlowClicked, false);
-                
-                // ... and add it to the item context menu
-                itemAnalyticsDOM.firstChild.appendChild(flowDOM);
-                
-                // ... then clone it and add it to the collection context menu as well
-                var collectionFlowDOM = flowDOM.cloneNode(true);
-                collectionFlowDOM.flowURL = flow.url;
-                collectionFlowDOM.flowName = flow.name;
-                collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
-                collectionAnalyticsDOM.firstChild.appendChild(collectionFlowDOM);
-            }
-            
-            // configuration received successfully -> enable access to the analytics menus
-            itemAnalyticsDOM.setAttribute('disabled', false);
-            collectionAnalyticsDOM.setAttribute('disabled', false);
-        });
+        // remove all entries in the seasr analytics item context menu
+        var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
+        // TODO: need to remove event listeners from nodes to prevent memory leak
+        //for (var i in itemAnalyticsDOM.children)
+        removeChildrenFromNode(itemAnalyticsDOM.firstChild);
         
-        // perform the async http request
-        AJAX.update("");
+        // remove all entries in the seasr analytics collection context menu
+        var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
+        removeChildrenFromNode(collectionAnalyticsDOM.firstChild);
+    
+        // the IO service
+        var ioService = Components.classes["@mozilla.org/network/io-service;1"]
+                          .getService(Components.interfaces.nsIIOService);
+
+        for each(provider in providers) {
+            try {
+                var uri = ioService.newURI(provider.url, null, null);
+                var channel = ioService.newChannelFromURI(uri);
+                var inputStream = channel.open();
+                
+                var scriptableInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
+                        .createInstance(Components.interfaces.nsIScriptableInputStream);
+                scriptableInputStream.init(inputStream);
+                
+                var data = "";
+        
+                var str = scriptableInputStream.read(4096);
+                while (str.length > 0) {
+                  data += str;
+                  str = scriptableInputStream.read(4096);
+                }
+                
+                try {
+                    var configData = _JSON.unserialize(data);
+                } catch (jsonError) {
+                    LOG("Unable to parse configuration data from "+ provider.name + " (" + provider.url + ")");
+                    LOG("Reason: " + jsonError.message);
+                    continue;
+                }
+                
+                addFlows(provider.name, configData["seasr_flows"], provider.enabled);
+                
+            } catch (e) {
+                LOG("Unable to retrieve configuration data from " + provider.name + " (" + provider.url + ")");
+                LOG("Reason: " + e.message);
+            }
+        }
     }
-    
+        
+    function addFlows(providerName, flows, enabled) {
+        providerName = providerName.trim();
+        providerId = providerName.toLowerCase();
+        
+        if (!flows || flows.length == 0) {
+            LOG("No flows found. Provider: " + providerName);
+            return;
+        }
+        
+        var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
+        var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
+
+        var itemProviderDOM = document.getElementById('seasr-item-provider-' + providerId);
+        var collectionProviderDOM = document.getElementById('seasr-collection-provider-' + providerId);
+        
+        if (!itemProviderDOM) {
+            itemProviderDOM = createNode('menu', providerName);
+            itemProviderDOM.setAttribute('id', 'seasr-item-provider-' + providerId);
+            itemProviderDOM.appendChild(createNode('menupopup'));
+            
+            itemAnalyticsDOM.firstChild.appendChild(itemProviderDOM);
+        }
+        
+        itemProviderDOM.setAttribute('disabled', !enabled);
+
+        if (!collectionProviderDOM) {
+            collectionProviderDOM = createNode('menu', providerName);
+            collectionProviderDOM.setAttribute('id', 'seasr-collection-provider-' + providerId);
+            collectionProviderDOM.appendChild(createNode('menupopup'));
+            
+            collectionAnalyticsDOM.firstChild.appendChild(collectionProviderDOM);
+        }
+        
+        collectionProviderDOM.setAttribute('disabled', !enabled);
+
+        // for each explicit flow defined in the configuration file
+        for each (var flow in flows) {
+            // create a menuitem entry
+            var flowDOM = createNode("menuitem", flow.name);
+            flowDOM.flowURL = flow.url;
+            flowDOM.flowName = flow.name;
+            flowDOM.setAttribute('disabled', !enabled);
+            //flowDOM.setAttribute('oncommand', 'alert("flow clicked");');
+            flowDOM.addEventListener('click', itemFlowClicked, false);
+            
+            // ... and add it to the item context menu
+            itemProviderDOM.firstChild.appendChild(flowDOM);
+            
+            // ... then clone it and add it to the collection context menu as well
+            var collectionFlowDOM = flowDOM.cloneNode(true);
+            collectionFlowDOM.flowURL = flow.url;
+            collectionFlowDOM.flowName = flow.name;
+            collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
+            collectionProviderDOM.firstChild.appendChild(collectionFlowDOM);
+        }
+        
+        // configuration received successfully -> enable access to the analytics menus
+        itemAnalyticsDOM.setAttribute('disabled', false);
+        collectionAnalyticsDOM.setAttribute('disabled', false);
+    }
+
     function createNode(type, label) {
         const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
         
@@ -216,32 +207,13 @@ Zotero.SEASR = new function() {
             node.removeChild(node.firstChild);
         }
     }
-    
-    /////////////////////////////////////////////////////////////////////////
-    // Performs an asynchronous http request to retrieve all flows available
-    // on the specified server, matching a predefined tag
-    /////////////////////////////////////////////////////////////////////////
-    function retrieveFlowsFromServer(server, tag, callback) {
-        var listFlowsUrl = "http://" + server.username + ":" + server.password + "@"
-           + server.host + ":" + server.port + "/services/repository/flows_by_tag.json";
-           //+ server.host + ":" + server.port + "/services/repository/list_flows.json";
-            
-        LOG("Querying service: " + listFlowsUrl);
-        
-        var AJAX = new ajaxObject(listFlowsUrl, function (response, status) {
-            callback(server, response, status);
-        });
-        
-        AJAX.update("tag=" + tag);
-        //AJAX.update("");
-    }
 
     //////////////////////////////////////////////////////////////////////////////
     // Called when the translator has completed the export of the metadata to RDF
     //////////////////////////////////////////////////////////////////////////////
     function _exportDone(obj, worked) {
         if (!worked) {
-            throw ("An error was encountered while retrieving the metadata from the translation service!");
+            throw new Error("An error was encountered while retrieving the metadata from the translation service!");
             return;
         }
         
@@ -328,7 +300,7 @@ Zotero.SEASR = new function() {
     
     function processExecutionResult(response) {
         if (response == null) {
-            alert("There was a problem retrieving the results from the server")
+            alert("There was a problem retrieving the results from the server");
             return;
         }
         
@@ -454,7 +426,7 @@ Zotero.SEASR = new function() {
     
     function getCollectionResults() {
         var seasrAnalyticsResults = null;
-        var resultsCollectionName = Strings.getString("results.collection");
+        var resultsCollectionName = Strings.getString("seasr.analytics.results.collection");
         
         var collections = Zotero.getCollections();
         for each (var collection in collections) {
