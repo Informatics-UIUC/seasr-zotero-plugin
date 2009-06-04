@@ -4,3 +4,4 @@
 <!ENTITY zeasr.preferences.providerenabled      "Enabled">
 <!ENTITY zeasr.preferences.provideradd          "Add">
 <!ENTITY zeasr.preferences.providerremove       "Remove">
+<!ENTITY zeasr.preferences.reload               "Reload">

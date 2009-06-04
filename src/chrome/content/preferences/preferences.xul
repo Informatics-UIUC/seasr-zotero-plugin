@@ -30,9 +30,13 @@
                 
                 <separator class="thin"/>
                 
-                <hbox pack="end">
+                <hbox>
+                    <button label="&zeasr.preferences.reload;"
+                            oncommand="Zotero.SEASR.retrieveConfiguration(Zotero.SEASR.Preferences.getProviders()); alert('Configuration reloaded');"/>
+                    <spacer flex="1"/>
                     <button label="&zeasr.preferences.provideradd;" oncommand="Zotero.SEASR.PrefPane.showProviderEditor()"/>
-                    <button id="providerremove" label="&zeasr.preferences.providerremove;" oncommand="Zotero.SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
+                    <button id="providerremove" label="&zeasr.preferences.providerremove;"
+                            oncommand="Zotero.SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
                 </hbox>
             </groupbox>
             
