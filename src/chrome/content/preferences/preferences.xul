@@ -16,8 +16,9 @@
             <groupbox>
                 <caption label="&zeasr.preferences.settings;"/>
                 
-                <tree flex="1" id="configProviders" rows="6" selype="single" hidecolumnpicker="true" editable="true">
-                    <!--ondblclick="Zotero.SEASR.PrefPane.showProviderEditor(this.currentIndex)"-->
+                <tree flex="1" id="configProviders" rows="6" selype="single" hidecolumnpicker="true"
+                      ondblclick="Zotero.SEASR.PrefPane.showProviderEditor(this.currentIndex)"
+                      onselect="validateSelection(this)">
                     <treecols>
                         <treecol id="providerName" label="&zeasr.preferences.providername;" flex="1"/>
                         <splitter class="tree-splitter"/>
@@ -25,14 +26,14 @@
                         <splitter class="tree-splitter"/>
                         <treecol id="providerEnabled" label="&zeasr.preferences.providerenabled;" type="checkbox" editable="true"/>
                     </treecols>
-                    <treechildren id="configProviders-rows"/>
+                    <treechildren id="configProviders-rows" alternatingbackground="true"/>
                 </tree>
                 
                 <separator class="thin"/>
                 
                 <hbox pack="end">
-                    <button label="&zeasr.preferences.provideradd;" onclick="Zotero.SEASR.PrefPane.showProviderEditor()"/>
-                    <button label="&zeasr.preferences.providerremove;" onclick="Zotero.SEASR.PrefPane.deleteSelectedProvider()"/>
+                    <button label="&zeasr.preferences.provideradd;" oncommand="Zotero.SEASR.PrefPane.showProviderEditor()"/>
+                    <button id="providerremove" label="&zeasr.preferences.providerremove;" oncommand="Zotero.SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
                 </hbox>
                         
                 <hbox align="center">
@@ -49,7 +50,11 @@
         <script src="chrome://zeasr/content/include.js"/>
         <script type="text/javascript"><![CDATA[
             function init() {
-                 Zotero.SEASR.PrefPane.init(document);
+                Zotero.SEASR.PrefPane.init(document);
+            }
+            
+            function validateSelection(tree) {
+                document.getElementById('providerremove').disabled = (tree.view.selection.getRangeCount() != 1);
             }
         //]]></script>
     </prefwindow>

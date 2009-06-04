@@ -7,9 +7,9 @@ function LOG(msg)
 }
 
 if (typeof(Zotero) == "undefined") {
-    const loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
-                        .getService(Components.interfaces.mozIJSSubScriptLoader);
-    loader.loadSubScript("chrome://zotero/content/include.js");
+    Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+                        .getService(Components.interfaces.mozIJSSubScriptLoader)
+                        .loadSubScript("chrome://zotero/content/include.js");
 }
 
 if (typeof(JSON) == "undefined") {
@@ -30,6 +30,8 @@ if (typeof(JSON) == "undefined") {
 
 // Only create the main object once
 if (!Zotero.SEASR) {
+    const loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
+                        .getService(Components.interfaces.mozIJSSubScriptLoader);
     loader.loadSubScript("chrome://zeasr/content/zeasr.js");
     loader.loadSubScript("chrome://zeasr/content/preferences/preferences.js");
     loader.loadSubScript("chrome://zeasr/content/ajax.js");

@@ -4,9 +4,8 @@
 
 <!DOCTYPE window SYSTEM "chrome://zeasr/locale/preferences.dtd">
 <dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-        title="Add Provider"
+        title=""
         buttons="accept,cancel"
-        buttonlabelaccept="&zeasr.preferences.provideradd;"
         onload="doValidation()"
         id="zeasr-providerEditor"
         ondialogaccept="onAccept();">
@@ -24,16 +23,17 @@
     <script src="chrome://zeasr/content/include.js"/>
     <script type="text/javascript"><![CDATA[
         var param = window.arguments[0];
-        document.getElementById('zeasr-providerEditor-name').value = param.name;
-        document.getElementById('zeasr-providerEditor-url').value = param.url;
-        document.getElementById('zeasr-providerEditor-enabled').checked = param.enabled;
+        document.getElementById('zeasr-providerEditor-name').value = param.provider.name;
+        document.getElementById('zeasr-providerEditor-url').value = param.provider.url;
+        document.getElementById('zeasr-providerEditor-enabled').checked = param.provider.enabled;
         
         function onAccept() {
             var name = document.getElementById('zeasr-providerEditor-name').value;
             var url = document.getElementById('zeasr-providerEditor-url').value;
             var enabled = document.getElementById('zeasr-providerEditor-enabled').checked;
             
-            Zotero.SEASR.Preferences.addProvider(name, url, enabled);
+            param.provider = { name: name, url: url, enabled: enabled };
+            param.ok = true;
         }
         
         function doValidation() {

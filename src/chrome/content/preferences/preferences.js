@@ -111,11 +111,16 @@ Zotero.SEASR.PrefManager = new function() {
 Zotero.SEASR.Preferences = new function() {
     this.addProvider = addProvider;
     this.deleteProvider = deleteProvider;
+    this.changeProvider = changeProvider;
     this.getProviders = getProviders;
     
     
     function getProviders() {
         return getProvidersFromPref("configProviders");
+    }
+    
+    function setProviders(providers) {
+        setProvidersPref("configProviders", providers);
     }
     
     function getProvidersFromPref(pref)
@@ -128,15 +133,15 @@ Zotero.SEASR.Preferences = new function() {
         Zotero.SEASR.PrefManager.set(pref, JSON.serialize(providers));
     }
     
-    function addProvider(provName, provURL, provEnabled) {
-        var configProviders = getProvidersFromPref('configProviders');
-        configProviders.push({ name: provName, url: provURL, enabled: provEnabled });
-        setProvidersPref('configProviders', configProviders);
+    function addProvider(provider) {
+        var configProviders = getProviders();
+        configProviders.push({ name: provider.name, url: provider.url, enabled: provider.enabled });
+        setProviders(configProviders);
     }
     
     function deleteProvider(providerURL)
     {
-        var configProviders = getProvidersFromPref('configProviders');
+        var configProviders = getProviders();
         
         for (var i = 0; i < configProviders.length; i++) {
             if (configProviders[i].url == providerURL) {
@@ -145,7 +150,20 @@ Zotero.SEASR.Preferences = new function() {
             }
         }
         
-        setProvidersPref('configProviders', configProviders);
+        setProviders(configProviders);
+    }
+    
+    function changeProvider(url, newProvider) {
+        var configProviders = getProviders();
+        
+        for (var i = 0; i < configProviders.length; i++) {
+            if (configProviders[i].url == url) {
+                configProviders[i] = newProvider;
+                break;
+            }
+        }
+        
+        setProviders(configProviders);
     }
 }
 
@@ -167,6 +185,8 @@ Zotero.SEASR.PrefPane = new function() {
     
     function updateProviderList()
     {
+        if (!prefpane) return;
+        
         var providerTreeRows = prefpane.getElementById('configProviders-rows');
         while (providerTreeRows.hasChildNodes()) {
             providerTreeRows.removeChild(providerTreeRows.firstChild);
@@ -195,21 +215,25 @@ Zotero.SEASR.PrefPane = new function() {
     }
 
     function deleteSelectedProvider() {
+        if (!prefpane) return;
+        
         var tree = prefpane.getElementById('configProviders');
         if (tree.currentIndex < 0) return;
     
         var treeitem = tree.lastChild.childNodes[tree.currentIndex];
         var providerURL = treeitem.firstChild.childNodes[1].getAttribute('label');
-        
+ 
         Zotero.SEASR.Preferences.deleteProvider(providerURL);
     }
     
-    function showProviderEditor(index)
+    function showProviderEditor(idx)
     {
+        if (!prefpane) return;
+        
         var treechildren = prefpane.getElementById('configProviders-rows');
         
-        if (typeof(index) != "undefined" && index >= 0 && index < treechildren.childNodes.length) {
-            var treerow = treechildren.childNodes[index].firstChild;
+        if (typeof(idx) != "undefined" && idx >= 0 && idx < treechildren.childNodes.length) {
+            var treerow = treechildren.childNodes[idx].firstChild;
             var providerName = treerow.childNodes[0].getAttribute('label');
             var providerURL = treerow.childNodes[1].getAttribute('label');
             var providerEnabled = treerow.childNodes[2].getAttribute('value');
@@ -219,22 +243,16 @@ Zotero.SEASR.PrefPane = new function() {
             var providerEnabled = "false";
         }
         
-        var param = { name: providerName, url: providerURL, enabled: providerEnabled };
+        var param = { provider: { name: providerName, url: providerURL, enabled: providerEnabled }, ok: false };
         window.openDialog('chrome://zeasr/content/preferences/providerEditor.xul', "zeasr-providerEditor", "chrome, modal", param);
-    }
-    
-    function editProvider(index)
-    {
-        var treechildren = prefpane.getElementById('configProviders-rows');
         
-        if (typeof(index) == "undefined" || index < 0 || index >= treechildren.childNodes.length)
+        if (!param.ok) {
             return;
+        }
         
-        var treerow = treechildren.childNodes[index].firstChild;
-        var providerName = treerow.childNodes[0].getAttribute('label');
-        var providerURL = treerow.childNodes[1].getAttribute('label');
-        var providerEnabled = treerow.childNodes[2].getAttribute('value');
-        
-        LOG(providerName + "," + providerURL + "," + providerEnabled);
+        if (typeof(idx) == "undefined")
+            Zotero.SEASR.Preferences.addProvider(param.provider);
+        else
+            Zotero.SEASR.Preferences.changeProvider(providerURL, param.provider);   
     }
 }
