@@ -328,19 +328,19 @@ Zotero.SEASR = new function() {
         stream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);  // write, create, truncate
         
         //TODO use this for writing the result as a non-intl string
-        //stream.write(htmlResult, htmlResult.length);
-        //stream.close();
+        stream.write(htmlResult, htmlResult.length);
+        stream.close();
         
         //TODO uncomment below to enable writing intl-aware output
-        // assume UTF-8 encoding for now
-        var charset = "UTF-8";
-        
-        // Write the result to the file
-        var os = Components.classes["@mozilla.org/intl/converter-output-stream;1"]
-                .createInstance(Components.interfaces.nsIConverterOutputStream);
-        os.init(stream, charset, 0, 0x0000);
-        os.writeString(htmlResult);
-        os.close();
+        //// assume UTF-8 encoding for now
+        //var charset = "UTF-8";
+        //
+        //// Write the result to the file
+        //var os = Components.classes["@mozilla.org/intl/converter-output-stream;1"]
+        //        .createInstance(Components.interfaces.nsIConverterOutputStream);
+        //os.init(stream, charset, 0, 0x0000);
+        //os.writeString(htmlResult);
+        //os.close();
 
         // Create the result item
         var data = {
