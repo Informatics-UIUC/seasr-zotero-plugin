@@ -1,56 +1,20 @@
-Zotero.SEASR = new function() {
+var SEASR = new function() {
     var _tmpfile, translator, flow;
 
     this.init = init;
     this.retrieveConfiguration = retrieveConfiguration;
     this.submitItems = submitItems;
     this.submitCollection = submitCollection;
-
+    
     // localized strings
     var Strings;
 
     //////////////////
     // Initialization
     //////////////////
-    function init() {
+    function init() {        
         Strings = document.getElementById('zeasr-strings');
-        
-        // hook the "popupshowing" event for the item context menu
-        document.getElementById('zotero-itemmenu')
-                .addEventListener('popupshowing',
-                    function(e) {
-                        var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
-                        var itemSelectionCount = ZoteroPane.itemsView.selection.count;
-                        if (itemSelectionCount == 0) {
-                            itemAnalyticsDOM.setAttribute('hidden', true);
-                            return;
-                        }
-                            
-                        itemAnalyticsDOM.setAttribute('hidden', false);
-                        itemAnalyticsDOM.setAttribute('label', Strings.getString("seasr.analytics"));
-                    }, false);
-        
-        // hook the "popupshowing" event for the collection context menu
-        document.getElementById('zotero-collectionmenu')
-                .addEventListener('popupshowing',
-                    function(e) {
-                        var label;
-                        
-                        var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
-                        var selectedCollection = ZoteroPane.getSelectedCollection(false);
-
-                        if (!selectedCollection || selectedCollection.isCollection())
-                            label = Strings.getString("seasr.analytics");
-                        else {
-                                collectionAnalyticsDOM.setAttribute('hidden', true);
-                                return;
-                        }
-                        
-                        //TODO change true to false to re-enable collection submittal
-                        collectionAnalyticsDOM.setAttribute('hidden', false);
-                        collectionAnalyticsDOM.setAttribute('label', label);
-                    }, false);
-        
+ 
         // create a temporary file to store the results of the RDF export
         _tmpfile = Components.classes["@mozilla.org/file/directory_service;1"]
                      .getService(Components.interfaces.nsIProperties)
@@ -62,9 +26,11 @@ Zotero.SEASR = new function() {
         translator.setHandler("done", _exportDone);
         if (!translator.setTranslator("14763d24-8ba0-45df-8f52-b8d1108e7ac9"))
             throw ("Cannot instantiate the Zotero RDF translator!");
-        
+    
         // update the UI with data extracted from the provider configuration
-        retrieveConfiguration(Zotero.SEASR.Preferences.getProviders());
+        retrieveConfiguration(SEASR.Preferences.getProviders());
+        
+        this.initialized = true;
     }
     
     //////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +39,7 @@ Zotero.SEASR = new function() {
     //////////////////////////////////////////////////////////////////////////////////
     function retrieveConfiguration(providers) {
         if (!providers) throw new Error("updateConfiguration: Need to specify the providers to use");
-    
+
         // remove all entries in the seasr analytics item context menu
         var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
         // TODO: need to remove event listeners from nodes to prevent memory leak
@@ -86,12 +52,16 @@ Zotero.SEASR = new function() {
     
         // the IO service
         var ioService = Components.classes["@mozilla.org/network/io-service;1"]
-                          .getService(Components.interfaces.nsIIOService);
+                            .getService(Components.interfaces.nsIIOService);
 
+        var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+                            .createInstance(Components.interfaces.nsIDOMParser);
+                                 
         for each(provider in providers) {
             try {
                 var uri = ioService.newURI(provider.url, null, null);
                 var channel = ioService.newChannelFromURI(uri);
+                channel.loadFlags |= Components.interfaces.nsIRequest.LOAD_BYPASS_CACHE;
                 var inputStream = channel.open();
                 
                 var scriptableInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
@@ -105,20 +75,47 @@ Zotero.SEASR = new function() {
                   data += str;
                   str = scriptableInputStream.read(4096);
                 }
+
+                var flows = new Array();
                 
-                try {
-                    var configData = _JSON.unserialize(data);
-                } catch (jsonError) {
-                    LOG("Unable to parse configuration data from "+ provider.name + " (" + provider.url + ")");
-                    LOG("Reason: " + jsonError.message);
-                    continue;
+                if (provider.url.toLowerCase().endsWith(".xml")) {
+                    // Load in XML format
+                    var doc = parser.parseFromString(data, "text/xml");
+                    var iterator = doc.evaluate('//flow', doc, null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
+    
+                    try {
+                        var flowNode = iterator.iterateNext();
+                      
+                        while (flowNode) {
+                            flows.push({ name: flowNode.getAttribute('name'), url: flowNode.getAttribute('url') });
+                            flowNode = iterator.iterateNext();
+                        }	
+                    }
+                    catch (xmlError) {
+                        LOG("Unable to parse configuration data from "+ provider.name + " (" + provider.url + ")");
+                        LOG("Reason: " + xmlError.message);
+                        alert("Error parsing configuration data from " + provider.name + " (" + provider.url + ") - skipping it...")
+                        continue;
+                    }
+                } else {
+                    // Load in JSON format
+                    try {
+                        var configData = _JSON.unserialize(data);
+                    } catch (jsonError) {
+                        LOG("Unable to parse configuration data from "+ provider.name + " (" + provider.url + ")");
+                        LOG("Reason: " + jsonError.message);
+                        alert("Syntax error parsing configuration data from " + provider.name + " (" + provider.url + ") - skipping it...")
+                        continue;
+                    }
+                    
+                    flows = configData["seasr_flows"];
                 }
                 
-                addFlows(provider.name, configData["seasr_flows"], provider.enabled);
-                
+                addFlows(provider.name, flows, provider.enabled);
             } catch (e) {
                 LOG("Unable to retrieve configuration data from " + provider.name + " (" + provider.url + ")");
                 LOG("Reason: " + e.message);
+                alert("Error retrieving configuration data from " + provider.name + " (" + provider.url + ")!\nReason: " + e.message);
             }
         }
     }
@@ -129,6 +126,7 @@ Zotero.SEASR = new function() {
         
         if (!flows || flows.length == 0) {
             LOG("No flows found. Provider: " + providerName);
+            alert("No flows found for provider: " + providerName);
             return;
         }
         
@@ -146,7 +144,7 @@ Zotero.SEASR = new function() {
             itemAnalyticsDOM.firstChild.appendChild(itemProviderDOM);
         }
         
-        itemProviderDOM.setAttribute('disabled', !enabled);
+        itemProviderDOM.hidden = !enabled;
 
         if (!collectionProviderDOM) {
             collectionProviderDOM = createNode('menu', providerName);
@@ -156,7 +154,7 @@ Zotero.SEASR = new function() {
             collectionAnalyticsDOM.firstChild.appendChild(collectionProviderDOM);
         }
         
-        collectionProviderDOM.setAttribute('disabled', !enabled);
+        collectionProviderDOM.hidden = !enabled;
 
         // for each explicit flow defined in the configuration file
         for each (var flow in flows) {
@@ -178,10 +176,6 @@ Zotero.SEASR = new function() {
             collectionFlowDOM.addEventListener('click', collectionFlowClicked, false);
             collectionProviderDOM.firstChild.appendChild(collectionFlowDOM);
         }
-        
-        // configuration received successfully -> enable access to the analytics menus
-        itemAnalyticsDOM.setAttribute('disabled', false);
-        collectionAnalyticsDOM.setAttribute('disabled', false);
     }
 
     function createNode(type, label) {
@@ -228,6 +222,7 @@ Zotero.SEASR = new function() {
         
         // get a channel for that nsIURI
         var channel = ioService.newChannelFromURI(uri);
+        channel.loadFlags |= Components.interfaces.nsIRequest.LOAD_BYPASS_CACHE;
         channel.notificationCallbacks = listener;
 
         var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
@@ -272,23 +267,13 @@ Zotero.SEASR = new function() {
         this.data = "";
         
         function onStartRequest(aRequest, aContext) {
-            LOG("Sending request to server");
         }
         
-        function onStopRequest(aRequest, aContext, aStatus) {
-            if (Components.isSuccessCode(aStatus)) {
-                LOG("Request succeded");
-                
-                this.callback(this.data);
-            } else {
-                LOG("Request failed");
-                this.callback(null);
-            }
+        function onStopRequest(aRequest, aContext, aStatus) {   
+            this.callback(Components.isSuccessCode(aStatus) ? this.data : null);
         }
         
         function onDataAvailable(aRequest, aContext, aStream, aSourceOffset, aLength) {
-            LOG("Data received: srcOffset=" + aSourceOffset + " length=" + aLength);
-
             var scriptableInputStream =
                 Components.classes["@mozilla.org/scriptableinputstream;1"]
                 .createInstance(Components.interfaces.nsIScriptableInputStream);
@@ -320,9 +305,7 @@ Zotero.SEASR = new function() {
         file.initWithPath(tmpDir.path);
         file.append(flow.flowName.replace(/\\|\/|:|\*|\?|"|<|>|\|/g, "_") + ".html");
         file.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0666);
-        
-        //LOG("Creating results temp file: " + file.path);
-
+    
         var stream = Components.classes["@mozilla.org/network/file-output-stream;1"]
                 .createInstance(Components.interfaces.nsIFileOutputStream);
         stream.init(file, 0x02 | 0x08 | 0x20, 0666, 0);  // write, create, truncate
@@ -342,11 +325,22 @@ Zotero.SEASR = new function() {
         //os.writeString(htmlResult);
         //os.close();
 
+        var resTitle;
+        
+        if (translator.itemIds != null) {
+            if (translator.itemIds.length == 1)
+                resTitle = Zotero.Items.get(translator.itemIds[0]).getField('title');
+            else
+                resTitle = getCollectionName(translator.selectedCollection) + " (" + translator.itemIds.length + ")";
+        } else {
+            resTitle = getCollectionName(Zotero.Collections.get(translator.collectionId));
+        }
+        
         // Create the result item
         var data = {
-            title: flow.flowName,
+            title: resTitle,
             creators: [
-                ['Meandre', 'SEASR Analytics', 'author']
+                ['SEASR Analytics', flow.flowName, 'author']
             ],
             url: flow.flowURL
         };
@@ -365,15 +359,15 @@ Zotero.SEASR = new function() {
         
         // Link the source items used in the analysis to the result item
         for each (itemId in translator.itemIds)
-            if ('addRelatedItem' in resultItem)
+            if ('addRelatedItem' in resultItem) {
                 resultItem.addRelatedItem(itemId);
-            else
+                Zotero.Items.get(itemId).addRelatedItem(resultItem.id);
+            }
+            else 
                 resultItem.addSeeAlso(itemId);  // for backward compatibility with Zotero 1.0.*
         
         // Add the result item to the results collection
         getCollectionResults().addItem(resultItem.id);
-        
-        //,status=no,toolbar=no,location=no,menubar=no
         
         // Display the result in a window
         window.open("zotero://attachment/" + attachmentId + "/", attachmentId,
@@ -386,6 +380,10 @@ Zotero.SEASR = new function() {
         //win.document.open();
         //win.document.write(htmlResult);
         //win.document.close();
+    }
+    
+    function getCollectionName(collection) {
+        return (!collection) ? "My Library" : collection.getName();
     }
 
     function itemFlowClicked() {
@@ -405,6 +403,7 @@ Zotero.SEASR = new function() {
         translator.submitURL = url;
         translator.itemIds = itemIds;
         translator.collectionId = null;
+        translator.selectedCollection = ZoteroPane.getSelectedCollection(false);
         translator.translate();
     }
     
@@ -442,5 +441,3 @@ Zotero.SEASR = new function() {
         return seasrAnalyticsResults;
     }
 };
-
-window.addEventListener('load', function(e) { Zotero.SEASR.init(); }, false);

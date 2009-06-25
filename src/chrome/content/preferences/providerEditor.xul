@@ -16,12 +16,14 @@
         <separator class="thin"/>
         <label value="&zeasr.preferences.providerurl;" control="zeasr-providerEditor-url"/>
         <textbox id="zeasr-providerEditor-url" oninput="doValidation()"/>
+        <hbox pack="end">
+            <button label="&zeasr.preferences.browse;" oncommand="selectLocalConfigFile();"/>
+        </hbox>
         <separator class="thin"/>
         <checkbox id="zeasr-providerEditor-enabled" label="&zeasr.preferences.providerenabled;"/>
     </vbox>
     
     <script src="chrome://zeasr/content/include.js"/>
-    <script src="chrome://zeasr/content/utils.js"/>
     <script type="text/javascript"><![CDATA[
         var param = window.arguments[0];
         document.getElementById('zeasr-providerEditor-name').value = param.provider.name;
@@ -41,6 +43,22 @@
             var name = document.getElementById('zeasr-providerEditor-name').value;
             var url = document.getElementById('zeasr-providerEditor-url').value;
             document.documentElement.getButton("accept").disabled = (name.length == 0 || url.length == 0);
+        }
+        
+        function selectLocalConfigFile() {
+            var nsIFilePicker = Components.interfaces.nsIFilePicker;
+            var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+            fp.init(window, "Select the configuration file", nsIFilePicker.modeOpen);
+            fp.appendFilter("Configuration Files", "*.config");
+            fp.appendFilters(nsIFilePicker.filterAll);
+            
+            if (fp.show() != nsIFilePicker.returnOK)
+                return;
+            
+            var ios = Components.classes["@mozilla.org/network/io-service;1"]
+                                .getService(Components.interfaces.nsIIOService);
+            var fileURI = ios.newFileURI(fp.file);
+            document.getElementById('zeasr-providerEditor-url').value = fileURI.spec;
         }
     //]]></script>
 </dialog>

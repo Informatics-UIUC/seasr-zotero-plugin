@@ -9,35 +9,43 @@
         <stringbundle id="zeasr-strings" src="chrome://zeasr/locale/zeasr.properties"/>
     </stringbundleset>
 
-    <!--<commandset id="mainCommandSet">-->
-    <!--    <command id="Tasks:RunAnalysisOnSelectedItems"-->
-    <!--             oncommand="Zotero.SEASR.runAnalysis(ZoteroPane.getSelectedItems());"/>-->
-    <!--</commandset>-->
-
-    <!--<menupopup id="zotero-tb-actions-popup">-->
-    <!--    <menuseparator id="zotero-tb-actions-utilities-separator" hidden="false"/>-->
-    <!--    <menuitem insertbefore="zotero-tb-actions-separator"-->
-    <!--              label="SEASR"-->
-    <!--              observes="Tasks:RunAnalysisOnSelectedItems"-->
-    <!--              class="menuitem-iconic"-->
-    <!--              image="chrome://zeasr/skin/seasr.png"/>-->
-    <!--</menupopup>-->
-
     <popup id="zotero-itemmenu">
         <menuseparator/>
-        <menu id="seasr-item-analytics" disabled="true">
+        <menu id="seasr-item-analytics" label="&zeasr.analytics.menu;" disabled="true">
             <menupopup/>
         </menu>
     </popup>
 
     <popup id="zotero-collectionmenu">
-        <!-- TODO re-enable collection submittal <menuseparator/> -->
-        <menu id="seasr-collection-analytics" disabled="true">
+        <menuseparator/>
+        <menu id="seasr-collection-analytics" label="&zeasr.analytics.menu;" disabled="true">
             <menupopup/>
         </menu>
     </popup>
-
-    <!-- Include the main extension logic -->
+ 
     <script src="chrome://zeasr/content/include.js"/>
-
+    <script><![CDATA[ 
+        function init() {
+            document.getElementById('zotero-itemmenu').addEventListener('popupshowing', function (e) {                
+                var hasItemsSelected = (ZoteroPane.itemsView.selection.count > 0);   
+                document.getElementById('seasr-item-analytics').disabled = !hasItemsSelected;
+            }, false);
+            
+            document.getElementById('zotero-collectionmenu').addEventListener('popupshowing', function (e) {                
+                var selectedCollection = ZoteroPane.getSelectedCollection(false);
+                var hasCollectionSelected = (!selectedCollection || selectedCollection.isCollection());
+                document.getElementById('seasr-collection-analytics').disabled = !hasCollectionSelected;
+            }, false);
+            
+            SEASR.init();
+            SEASR.PrefManager.register();
+        }
+        
+        function dispose() {
+            SEASR.PrefManager.unregister();
+        }
+        
+        window.addEventListener('load', function (e) { init(); }, false);
+        window.addEventListener('unload', function(e) { dispose(); }, false);
+    ]]></script>
 </overlay>

@@ -4,7 +4,8 @@
 
 <overlay id="zeasr-prefs"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-    <prefwindow id="zotero-prefs">
+
+    <prefwindow id="zotero-prefs" onunload="dispose();">
         <prefpane id="zeasr-prefpane-settings"
                   label="SEASR"
                   image="chrome://zeasr/skin/seasr32.png">
@@ -16,7 +17,7 @@
                 <caption label="&zeasr.preferences.settings;"/>
                 
                 <tree flex="1" id="configProviders" rows="6" selype="single" hidecolumnpicker="true"
-                      ondblclick="Zotero.SEASR.PrefPane.showProviderEditor(this.currentIndex)"
+                      ondblclick="SEASR.PrefPane.showProviderEditor(this.currentIndex)"
                       onselect="validateSelection(this)">
                     <treecols>
                         <treecol id="providerName" label="&zeasr.preferences.providername;" flex="1"/>
@@ -32,20 +33,37 @@
                 
                 <hbox>
                     <button label="&zeasr.preferences.reload;"
-                            oncommand="Zotero.SEASR.retrieveConfiguration(Zotero.SEASR.Preferences.getProviders()); alert('Configuration reloaded');"/>
+                            oncommand="reloadConfiguration();"/>
                     <spacer flex="1"/>
-                    <button label="&zeasr.preferences.provideradd;" oncommand="Zotero.SEASR.PrefPane.showProviderEditor()"/>
+                    <button label="&zeasr.preferences.provideradd;" oncommand="SEASR.PrefPane.showProviderEditor()"/>
                     <button id="providerremove" label="&zeasr.preferences.providerremove;"
-                            oncommand="Zotero.SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
+                            oncommand="SEASR.PrefPane.deleteSelectedProvider()" disabled="true"/>
                 </hbox>
             </groupbox>
             
         </prefpane>
         
         <script src="chrome://zeasr/content/include.js"/>
-        <script type="text/javascript"><![CDATA[
+        <script type="text/javascript"><![CDATA[            
             function init() {
-                Zotero.SEASR.PrefPane.init(document);
+                SEASR.PrefPane.init();
+                SEASR.PrefManager.register();
+            }
+            
+            function dispose() {
+                SEASR.PrefManager.unregister();
+            }
+            
+            function reloadConfiguration() {
+                var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
+                                .getService(Components.interfaces.nsIWindowMediator);
+                var enumerator = wm.getEnumerator("navigator:browser");
+                while(enumerator.hasMoreElements()) {
+                    var win = enumerator.getNext();
+                    win.SEASR.retrieveConfiguration(SEASR.Preferences.getProviders());
+                }
+                
+                alert("Configuration reloaded");
             }
             
             function validateSelection(tree) {

@@ -5,3 +5,4 @@
 <!ENTITY zeasr.preferences.provideradd          "Add">
 <!ENTITY zeasr.preferences.providerremove       "Remove">
 <!ENTITY zeasr.preferences.reload               "Reload">
+<!ENTITY zeasr.preferences.browse               "Browse">

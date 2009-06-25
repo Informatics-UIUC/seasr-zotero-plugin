@@ -1,53 +1,37 @@
-Zotero.SEASR.PrefManager = new function() {
-    this.init = init;
+SEASR.PrefManager = new function() {
+    var prefService = Components.classes["@mozilla.org/preferences-service;1"]
+                                .getService(Components.interfaces.nsIPrefService);
+    var branch = prefService.getBranch("extensions.zeasr.");
+    branch.QueryInterface(Components.interfaces.nsIPrefBranch2);
+
     this.get = get;
     this.set = set;
     
     this.register = register;
     this.unregister = unregister;
     this.observe = observe;
-    
-    this.prefBranch;
-    
-    ///////////////////////////////////////
-    // Initializes the preference observer
-    ///////////////////////////////////////
-    function init() {
-        var prefs = Components.classes["@mozilla.org/preferences-service;1"]
-                              .getService(Components.interfaces.nsIPrefService);
-        this.prefBranch = prefs.getBranch("extensions.zeasr.");
-        
-        // Observe preference changes
-        this.register();
-    }
-    
+ 
     /////////////////////////
     // Retrieve a preference
     /////////////////////////
     function get(pref, global) {
         try {
-            if (global) {
-                var service = Components.classes["@mozilla.org/preferences-service;1"]
-                                        .getService(Components.interfaces.nsIPrefService);
-            }
-            else {
-                var service = this.prefBranch;
-            }
+            var service = (global) ? prefService : branch;
             
-            switch (this.prefBranch.getPrefType(pref)){
-                case this.prefBranch.PREF_BOOL:
-                    return this.prefBranch.getBoolPref(pref);
-                case this.prefBranch.PREF_STRING:
-                    return this.prefBranch.getCharPref(pref);
-                case this.prefBranch.PREF_INT:
-                    return this.prefBranch.getIntPref(pref);
+            switch (service.getPrefType(pref)){
+                case service.PREF_BOOL:
+                    return service.getBoolPref(pref);
+                case service.PREF_STRING:
+                    return service.getCharPref(pref);
+                case service.PREF_INT:
+                    return service.getIntPref(pref);
                 default:
                     throw ("Unsupported preference type '" +
-                           this.prefBranch.getPrefType(pref) + "'");
+                           service.getPrefType(pref) + "'");
             }
         }
         catch(e) {
-            throw ("Invalid preference '" + pref + "'");
+            throw ("Invalid preference: '" + pref + "'");
         }
     }
     
@@ -56,20 +40,20 @@ Zotero.SEASR.PrefManager = new function() {
     ////////////////////
     function set(pref, value){
         try {
-            switch (this.prefBranch.getPrefType(pref)){
-                case this.prefBranch.PREF_BOOL:
-                    return this.prefBranch.setBoolPref(pref, value);
-                case this.prefBranch.PREF_STRING:
-                    return this.prefBranch.setCharPref(pref, value);
-                case this.prefBranch.PREF_INT:
-                    return this.prefBranch.setIntPref(pref, value);
+            switch (branch.getPrefType(pref)){
+                case branch.PREF_BOOL:
+                    return branch.setBoolPref(pref, value);
+                case branch.PREF_STRING:
+                    return branch.setCharPref(pref, value);
+                case branch.PREF_INT:
+                    return branch.setIntPref(pref, value);
                 default:
                     throw ("Unsupported preference type '" +
-                           this.prefBranch.getPrefType(pref) + "'");
+                           branch.getPrefType(pref) + "'");
             }
         }
         catch(e) {
-            throw ("Invalid preference '" + pref + "'");
+            throw ("Invalid preference: '" + pref + "'");
         }
     }
     
@@ -77,17 +61,15 @@ Zotero.SEASR.PrefManager = new function() {
     // Registers a preference change event observer
     ///////////////////////////////////////////////
     function register() {
-        this.prefBranch.QueryInterface(Components.interfaces.nsIPrefBranch2);
-        this.prefBranch.addObserver("", this, false);
+        branch.addObserver("", this, false);
     }
     
     ///////////////////////////////////////
     // Unregisters the preference observer
     ///////////////////////////////////////
     function unregister() {
-        if (!this.prefBranch) return;
-        
-        this.prefBranch.removeObserver("", this);
+        if (branch)
+            branch.removeObserver("", this);
     }
     
     //////////////////////////////
@@ -98,18 +80,18 @@ Zotero.SEASR.PrefManager = new function() {
         
         // subject is the nsIPrefBranch we're observing (after appropriate QI)
         // data is the name of the pref that's been changed (relative to subject)
-        switch(data) {
+        switch (data) {
             case "configProviders":
-                LOG("The SEASR providers preference has changed");
-                Zotero.SEASR.PrefPane.updateProviderList();
-                Zotero.SEASR.retrieveConfiguration(Zotero.SEASR.Preferences.getProviders());
+                SEASR.PrefPane.updateProviderList();
+                if (SEASR.initialized)
+                    SEASR.retrieveConfiguration(SEASR.Preferences.getProviders());
                 break;
         }
     }
 }
 
 
-Zotero.SEASR.Preferences = new function() {
+SEASR.Preferences = new function() {
     this.addProvider = addProvider;
     this.deleteProvider = deleteProvider;
     this.changeProvider = changeProvider;
@@ -117,11 +99,11 @@ Zotero.SEASR.Preferences = new function() {
     
     
     function getProviders() {
-        return _JSON.unserialize(Zotero.SEASR.PrefManager.get("configProviders"));
+        return _JSON.unserialize(SEASR.PrefManager.get("configProviders"));
     }
     
     function setProviders(providers) {
-        Zotero.SEASR.PrefManager.set("configProviders", _JSON.serialize(providers));
+        SEASR.PrefManager.set("configProviders", _JSON.serialize(providers));
     }
     
     function addProvider(provider) {
@@ -148,27 +130,7 @@ Zotero.SEASR.Preferences = new function() {
         configProviders.splice(index, 1);
         setProviders(configProviders);
     }
-    
-    /*function deleteProvider(providerName, providerURL)
-    {
-        var configProviders = getProviders();
-        var n = configProviders.length;
-        
-        for (var i = 0; i < configProviders.length; i++) {
-            if (configProviders[i].name.trim().toLowerCase() == providerName.trim().toLowerCase() &&
-                configProviders[i].url.trim() == providerURL.trim()) {
-                configProviders.splice(i, 1);
-                break;
-            }
-        }
-        
-        if (configProviders.length == n)
-            // nothing was removed
-            return;
-        
-        setProviders(configProviders);
-    }*/
-    
+ 
     function changeProvider(index, newProvider) {
         var configProviders = getProviders();
         
@@ -192,7 +154,7 @@ Zotero.SEASR.Preferences = new function() {
 }
 
 
-Zotero.SEASR.PrefPane = new function() {
+SEASR.PrefPane = new function() {
     this.init = init;
     this.updateProviderList = updateProviderList;
     this.showProviderEditor = showProviderEditor;
@@ -201,22 +163,22 @@ Zotero.SEASR.PrefPane = new function() {
     
     var prefpane;
     
-    function init(doc)
+    function init()
     {
-        prefpane = doc;
+        prefpane = document;
         updateProviderList();
     }
     
     function updateProviderList()
     {
         if (!prefpane) return;
-        
+
         var providerTreeRows = prefpane.getElementById('configProviders-rows');
         while (providerTreeRows.hasChildNodes()) {
             providerTreeRows.removeChild(providerTreeRows.firstChild);
         }
     
-        var providers = Zotero.SEASR.Preferences.getProviders();
+        var providers = SEASR.Preferences.getProviders();
         
         for each(var provider in providers) {
             var treeitem = prefpane.createElement('treeitem');
@@ -243,12 +205,8 @@ Zotero.SEASR.PrefPane = new function() {
         
         var tree = prefpane.getElementById('configProviders');
         if (tree.currentIndex < 0) return;
-    
-        //var treeitem = tree.lastChild.childNodes[tree.currentIndex];
-        //var providerName = treeitem.firstChild.childNodes[0].getAttribute('label');
-        //var providerURL = treeitem.firstChild.childNodes[1].getAttribute('label');
  
-        Zotero.SEASR.Preferences.deleteProvider(tree.currentIndex);
+        SEASR.Preferences.deleteProvider(tree.currentIndex);
     }
     
     function showProviderEditor(idx)
@@ -277,14 +235,14 @@ Zotero.SEASR.PrefPane = new function() {
         
         if (typeof(idx) == "undefined")
             try {
-                Zotero.SEASR.Preferences.addProvider(param.provider);
+                SEASR.Preferences.addProvider(param.provider);
             } catch(e) {
                 alert("Could not add the specified provider. Reason: " + e.message);
             }
         else {
             if (providerName != param.provider.name || providerURL != param.provider.url || providerEnabled != param.provider.enabled)
                 try {
-                    Zotero.SEASR.Preferences.changeProvider(idx, param.provider);
+                    SEASR.Preferences.changeProvider(idx, param.provider);
                 } catch(e) {
                     alert("Could not change the specified provider. Reason: " + e.message);
                 }

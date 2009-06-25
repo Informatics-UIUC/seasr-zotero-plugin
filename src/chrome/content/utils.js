@@ -2,6 +2,13 @@
 // Utility functions
 ///////////////////////////////////
 
+function LOG(msg)
+    {
+        Components.classes["@mozilla.org/consoleservice;1"]
+            .getService(Components.interfaces.nsIConsoleService)
+            .logStringMessage(msg);
+    }
+
 if (typeof(_JSON) == "undefined") {
     try {
         var nativeJSON = Components.classes["@mozilla.org/dom/json;1"].createInstance(Components.interfaces.nsIJSON);
@@ -11,11 +18,9 @@ if (typeof(_JSON) == "undefined") {
         var _JSON = {};
         _JSON.serialize = nativeJSON.encode;
         _JSON.unserialize = nativeJSON.decode;
-        LOG("Using native JSON support");
     } catch (e) {
         if (typeof(Zotero) != "undefined") {
             var _JSON = Zotero.JSON;
-            LOG("Using Zotero JSON support");
         }
     }
 }
@@ -30,4 +35,12 @@ if (typeof(String.toBoolean) == "undefined") {
     String.prototype.toBoolean = function() {
         return (/^true$/i).test(this);
     };
+}
+
+if (typeof(String.endsWith) == "undefined") {
+    String.prototype.endsWith = function(str)
+    {
+        var lastIndex = this.lastIndexOf(str);
+        return (lastIndex != -1) && (lastIndex + str.length == this.length);
+    }
 }

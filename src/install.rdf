@@ -5,7 +5,7 @@
 
     <Description about="urn:mozilla:install-manifest">
         <em:id>zotero@seasr.org</em:id>
-        <em:version>0.3.4</em:version>
+        <em:version>0.3.5</em:version>
         <em:type>2</em:type>
 
         <!-- Target Application this extension can install into,
@@ -14,7 +14,7 @@
             <Description>
                 <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
                 <em:minVersion>2.0</em:minVersion>
-                <em:maxVersion>3.1b3pre</em:maxVersion>
+                <em:maxVersion>3.5.*</em:maxVersion>
             </Description>
         </em:targetApplication>
 
@@ -24,7 +24,7 @@
                 <!-- Zotero -->
                 <em:id>zotero@chnm.gmu.edu</em:id>
                 <em:minVersion>1.0.1</em:minVersion>
-                <em:maxVersion>1.5.*</em:maxVersion>
+                <em:maxVersion>2.0b5</em:maxVersion>
             </Description>
         </em:requires>
 
@@ -35,5 +35,9 @@
         <em:homepageURL>http://www.seasr.org/zotero</em:homepageURL>
         <em:iconURL>chrome://zeasr/skin/seasr32.png</em:iconURL>
         <em:optionsURL>chrome://zotero/content/preferences/preferences.xul</em:optionsURL>
+        <em:updateURL>http://repository.seasr.org/Zotero/Releases/update-experimental.rdf</em:updateURL>
+        <em:updateKey>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXY3YU3JJDv44gAB8LpberlDP2PTsr2AgJQM+
+                      AjumBr6VifwQH23rG4lhz8Or4SSI9lJf9/X+Aaps1kVry2iZkiMwijRAE4lkfN9ogIq6NRpBVYX
+                      Mz+Adqre0EJegBqawt/+0XtHAOOPjp7sPPLmWDizKHaVT8wUVPotfCHQTT3QIDAQAB</em:updateKey>
     </Description>
 </RDF>
