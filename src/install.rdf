@@ -5,7 +5,7 @@
 
     <Description about="urn:mozilla:install-manifest">
         <em:id>zotero@seasr.org</em:id>
-        <em:version>0.3.5</em:version>
+        <em:version>0.3.6</em:version>
         <em:type>2</em:type>
 
         <!-- Target Application this extension can install into,
@@ -24,7 +24,7 @@
                 <!-- Zotero -->
                 <em:id>zotero@chnm.gmu.edu</em:id>
                 <em:minVersion>1.0.1</em:minVersion>
-                <em:maxVersion>2.0b5</em:maxVersion>
+                <em:maxVersion>2.0.*</em:maxVersion>
             </Description>
         </em:requires>
 

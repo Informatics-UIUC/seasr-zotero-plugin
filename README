@@ -1,0 +1,11 @@
+To release a new version to http://repository.seasr.org/Zotero/Releases
+
+1. Create .xpi file
+2. Copy file with proper name into .../Zotero/Releases/experimental/<version>/
+3. Create a changelog XHTML file like the ones for the previous versions containing the list of changes
+4. Edit the .../Zotero/Releases/update-experimental-pretty.rdf and add entries for the new version - do not forget to update the sha1: entry for the hash of the new .xpi file  (get that by invoking 'openssl sha1 <file>.xpi' at mac/linux command prompt)
+5. Copy/overwrite the update-experimental.rdf file with the contents of update-experimental-pretty.rdf
+6. Use the McCoy program to sign the update-experimental.rdf file (the McCoy program contains the private key used for signing .. only Boris has that now)
+7. Test that the new release works properly by trying to use the "Check for updates" in Firefox to update an earlier version to the latest version you created
+
+That's all, folks.
