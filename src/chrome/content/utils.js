@@ -2,12 +2,11 @@
 // Utility functions
 ///////////////////////////////////
 
-function LOG(msg)
-    {
-        Components.classes["@mozilla.org/consoleservice;1"]
+function LOG(msg){
+    Components.classes["@mozilla.org/consoleservice;1"]
             .getService(Components.interfaces.nsIConsoleService)
             .logStringMessage(msg);
-    }
+}
 
 if (typeof(_JSON) == "undefined") {
     try {
@@ -38,8 +37,7 @@ if (typeof(String.toBoolean) == "undefined") {
 }
 
 if (typeof(String.endsWith) == "undefined") {
-    String.prototype.endsWith = function(str)
-    {
+    String.prototype.endsWith = function(str) {
         var lastIndex = this.lastIndexOf(str);
         return (lastIndex != -1) && (lastIndex + str.length == this.length);
     }

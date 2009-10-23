@@ -18,7 +18,7 @@
                 
                 <tree flex="1" id="configProviders" rows="6" selype="single" hidecolumnpicker="true"
                       ondblclick="SEASR.PrefPane.showProviderEditor(this.currentIndex)"
-                      onselect="validateSelection(this)">
+                      onselect="seasr_validateSelection(this)">
                     <treecols>
                         <treecol id="providerName" label="&zeasr.preferences.providername;" flex="1"/>
                         <splitter class="tree-splitter"/>
@@ -33,7 +33,7 @@
                 
                 <hbox>
                     <button label="&zeasr.preferences.reload;"
-                            oncommand="reloadConfiguration();"/>
+                            oncommand="seasr_reloadConfiguration();"/>
                     <spacer flex="1"/>
                     <button label="&zeasr.preferences.provideradd;" oncommand="SEASR.PrefPane.showProviderEditor()"/>
                     <button id="providerremove" label="&zeasr.preferences.providerremove;"
@@ -54,7 +54,7 @@
                 SEASR.PrefManager.unregister();
             }
             
-            function reloadConfiguration() {
+            function seasr_reloadConfiguration() {
                 var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
                                 .getService(Components.interfaces.nsIWindowMediator);
                 var enumerator = wm.getEnumerator("navigator:browser");
@@ -66,7 +66,7 @@
                 alert("Configuration reloaded");
             }
             
-            function validateSelection(tree) {
+            function seasr_validateSelection(tree) {
                 document.getElementById('providerremove').disabled = (tree.view.selection.getRangeCount() != 1);
             }
         //]]></script>
