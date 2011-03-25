@@ -59,6 +59,7 @@
                                 .getService(Components.interfaces.nsIIOService);
             var fileURI = ios.newFileURI(fp.file);
             document.getElementById('zeasr-providerEditor-url').value = fileURI.spec;
+            doValidation();
         }
     //]]></script>
 </dialog>
