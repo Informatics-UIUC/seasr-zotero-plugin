@@ -9,19 +9,19 @@
         <stringbundle id="zeasr-strings" src="chrome://zeasr/locale/zeasr.properties"/>
     </stringbundleset>
 
-    <popup id="zotero-itemmenu">
+    <menupopup id="zotero-itemmenu">
         <menuseparator/>
         <menu id="seasr-item-analytics" label="&zeasr.analytics.menu;" disabled="true">
             <menupopup/>
         </menu>
-    </popup>
+    </menupopup>
 
-    <popup id="zotero-collectionmenu">
+    <menupopup id="zotero-collectionmenu">
         <menuseparator/>
         <menu id="seasr-collection-analytics" label="&zeasr.analytics.menu;" disabled="true">
             <menupopup/>
         </menu>
-    </popup>
+    </menupopup>
  
     <script src="chrome://zeasr/content/include.js"/>
     <script><![CDATA[ 
