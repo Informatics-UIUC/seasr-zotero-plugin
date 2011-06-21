@@ -115,7 +115,7 @@ var SEASR = new function() {
             } catch (e) {
                 LOG("Unable to retrieve configuration data from " + provider.name + " (" + provider.url + ")");
                 LOG("Reason: " + e.message);
-                alert("Error retrieving configuration data from " + provider.name + " (" + provider.url + ")!\nReason: " + e.message);
+                //alert("Error retrieving configuration data from " + provider.name + " (" + provider.url + ")!\nReason: " + e.message);
             }
         }
     }
