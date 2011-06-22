@@ -223,7 +223,7 @@ SEASR.PrefPane = new function() {
         } else {
             var providerName = "";
             var providerURL = "";
-            var providerEnabled = "false";
+            var providerEnabled = "true";
         }
         
         var param = { provider: { name: providerName, url: providerURL, enabled: providerEnabled }, ok: false };

@@ -75,7 +75,7 @@ var SEASR = new function() {
                   data += str;
                   str = scriptableInputStream.read(4096);
                 }
-
+              
                 var flows = new Array();
                 
                 if (provider.url.toLowerCase().endsWith(".xml")) {
@@ -110,12 +110,12 @@ var SEASR = new function() {
                     
                     flows = configData["seasr_flows"];
                 }
-                
+                                
                 addFlows(provider.name, flows, provider.enabled);
             } catch (e) {
                 LOG("Unable to retrieve configuration data from " + provider.name + " (" + provider.url + ")");
                 LOG("Reason: " + e.message);
-                //alert("Error retrieving configuration data from " + provider.name + " (" + provider.url + ")!\nReason: " + e.message);
+                alert("Error retrieving configuration data from " + provider.name + " (" + provider.url + ")!\nReason: " + e.message);
             }
         }
     }
@@ -123,13 +123,7 @@ var SEASR = new function() {
     function addFlows(providerName, flows, enabled) {
         providerName = providerName.trim();
         providerId = providerName.toLowerCase();
-        
-        if (!flows || flows.length == 0) {
-            LOG("No flows found. Provider: " + providerName);
-            alert("No flows found for provider: " + providerName);
-            return;
-        }
-        
+       
         var itemAnalyticsDOM = document.getElementById('seasr-item-analytics');
         var collectionAnalyticsDOM = document.getElementById('seasr-collection-analytics');
 
@@ -144,8 +138,6 @@ var SEASR = new function() {
             itemAnalyticsDOM.firstChild.appendChild(itemProviderDOM);
         }
         
-        itemProviderDOM.hidden = !enabled;
-
         if (!collectionProviderDOM) {
             collectionProviderDOM = createNode('menu', providerName);
             collectionProviderDOM.setAttribute('id', 'seasr-collection-provider-' + providerId);
@@ -153,9 +145,17 @@ var SEASR = new function() {
             
             collectionAnalyticsDOM.firstChild.appendChild(collectionProviderDOM);
         }
-        
-        collectionProviderDOM.hidden = !enabled;
 
+        itemProviderDOM.hidden = !enabled;
+        collectionProviderDOM.hidden = !enabled;
+       
+        if (!flows || flows.length == 0) {
+            LOG("No flows found. Provider: " + providerName + " - network connection absent?");
+            itemProviderDOM.setAttribute("disabled", true);
+            collectionProviderDOM.setAttribute("disabled", true);
+            return;
+        }
+  
         // for each explicit flow defined in the configuration file
         for each (var flow in flows) {
             // create a menuitem entry
