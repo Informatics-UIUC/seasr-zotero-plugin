@@ -5,7 +5,7 @@
 
     <Description about="urn:mozilla:install-manifest">
         <em:id>zotero@seasr.org</em:id>
-        <em:version>0.4.4</em:version>
+        <em:version>0.4.5</em:version>
         <em:type>2</em:type>
 
         <!-- Target Application this extension can install into,
@@ -14,7 +14,7 @@
             <Description>
                 <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
                 <em:minVersion>2.0</em:minVersion>
-                <em:maxVersion>6.*</em:maxVersion>
+                <em:maxVersion>8.*</em:maxVersion>
             </Description>
         </em:targetApplication>
 
@@ -32,7 +32,7 @@
         <em:name>SEASR Analytics for Zotero</em:name>
         <em:description>This extension to Zotero provides users with the ability to submit items / collections for analysis through the SEASR Analytics environment and retrieve, display, and store the results in Zotero itself.</em:description>
         <em:creator>Boris Capitanu</em:creator>
-        <em:homepageURL>http://www.seasr.org/zotero</em:homepageURL>
+        <em:homepageURL>http://www.seasr.org/documentation/zotero</em:homepageURL>
         <em:iconURL>chrome://zeasr/skin/seasr32.png</em:iconURL>
         <em:optionsURL>chrome://zotero/content/preferences/preferences.xul</em:optionsURL>
         <em:updateURL>http://repository.seasr.org/Zotero/Releases/update-experimental.rdf</em:updateURL>
