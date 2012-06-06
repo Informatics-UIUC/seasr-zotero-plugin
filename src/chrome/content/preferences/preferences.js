@@ -99,11 +99,11 @@ SEASR.Preferences = new function() {
     
     
     function getProviders() {
-        return _JSON.unserialize(SEASR.PrefManager.get("configProviders"));
+        return JSON.parse(SEASR.PrefManager.get("configProviders"));
     }
     
     function setProviders(providers) {
-        SEASR.PrefManager.set("configProviders", _JSON.serialize(providers));
+        SEASR.PrefManager.set("configProviders", JSON.stringify(providers));
     }
     
     function addProvider(provider) {

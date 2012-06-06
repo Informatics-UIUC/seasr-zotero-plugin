@@ -100,7 +100,7 @@ var SEASR = new function() {
                 } else {
                     // Load in JSON format
                     try {
-                        var configData = _JSON.unserialize(data);
+                        var configData = JSON.parse(data);
                     } catch (jsonError) {
                         LOG("Unable to parse configuration data from "+ provider.name + " (" + provider.url + ")");
                         LOG("Reason: " + jsonError.message);
