@@ -5,7 +5,7 @@
 <overlay id="zeasr-prefs"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
-    <prefwindow id="zotero-prefs" onunload="dispose();">
+    <prefwindow id="zotero-prefs" onload="init();" onunload="dispose();">
         <prefpane id="zeasr-prefpane-settings"
                   label="SEASR"
                   image="chrome://zeasr/skin/seasr32.png">
