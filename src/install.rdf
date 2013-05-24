@@ -18,16 +18,6 @@
             </Description>
         </em:targetApplication>
 
-        <!-- Dependencies -->
-        <em:requires>
-            <Description>
-                <!-- Zotero -->
-                <em:id>zotero@chnm.gmu.edu</em:id>
-                <em:minVersion>1.0.1</em:minVersion>
-                <em:maxVersion>4.*</em:maxVersion>
-            </Description>
-        </em:requires>
-
         <!-- Front End MetaData -->
         <em:name>SEASR Analytics for Zotero</em:name>
         <em:description>This extension to Zotero provides users with the ability to submit items / collections for analysis through the SEASR Analytics environment and retrieve, display, and store the results in Zotero itself.</em:description>
